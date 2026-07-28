@@ -1,98 +1,200 @@
-# vinext-starter
+# 한국 디지털 건강체력학회지 온라인 논문투고·심사 시스템
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+한국 디지털 건강체력학회지의 창간·초기 운영을 위한 실제 데이터 기반 투고·이중맹검 심사 시스템입니다. 기존 홈페이지의 녹색 계열 디자인과 JAMS에 가까운 업무 흐름을 유지하면서, 프론트엔드는 정적 배포 가능한 Next.js/Vinext, 인증·데이터·파일은 Supabase로 구성했습니다.
 
-## Prerequisites
+## 시스템 구조
 
-- Node.js `>=22.13.0`
+```text
+GitHub Pages / Vinext
+└─ Next.js 정적 프론트엔드
+   ├─ AUTHOR 대시보드: 투고, 수정본·최종본 제출, 결과 확인
+   ├─ REVIEWER 대시보드: 의뢰 수락·거절, 익명 원고, 심사의견 제출
+   └─ EDITOR / ADMIN 대시보드: 접수, 배정, 판정, 발행 관리
+              │ Supabase publishable key + 사용자 JWT
+              ▼
+Supabase
+├─ Authentication: 이메일 회원가입·로그인
+├─ PostgreSQL: 업무 데이터, RPC, RLS, 감사 이력
+├─ Storage: 원고·수정본·심사자료·최종본·발행본
+└─ Edge Function `file-access`: 권한 확인 후 업로드·서명 URL 발급
+```
 
-## Quick Start
+브라우저에는 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`만 전달합니다. `service_role`, 데이터베이스 비밀번호, Supabase access token은 저장소와 프론트엔드에 두지 않습니다. 파일 함수의 `SUPABASE_SERVICE_ROLE_KEY`는 Supabase가 함수 런타임에 제공하는 서버 전용 환경변수만 사용합니다.
+
+## 구현 범위
+
+- 신규 회원가입 시 `AUTHOR` 프로필 자동 생성
+- `AUTHOR`, `REVIEWER`, `EDITOR`, `ADMIN` 역할과 관리자 전용 역할 변경 RPC
+- 작성중부터 발행완료까지 14단계 상태와 모든 변경 이력 기록
+- `KJDHF-연도-일련번호` 형식의 원고번호 원자적 발급
+- 교신저자·공동저자, 한·영 제목/초록/키워드, 연구분야, 윤리·이해상충·저작권 동의
+- 원고·익명 원고, 수정본, 심사의견서, 최종본, 발행본 파일 관리
+- 원고당 복수 심사위원 배정, 수락·거절, 심사기한 관리
+- 저자 공개용 의견과 편집위원 전용 의견 분리
+- 편집판정, 발행호 생성, 최종 게재처리와 논문 배정
+- 역할별 대시보드와 관리자 통계
+- 핵심 테이블 RLS, 보안 RPC, 역할·원고 상태 감사 이력
+
+## 데이터베이스
+
+주요 테이블은 다음과 같습니다.
+
+| 테이블 | 용도 |
+| --- | --- |
+| `profiles` | 사용자 기본정보, 역할, 활성 상태 |
+| `profile_role_history` | 역할 변경 감사 이력 |
+| `manuscripts` | 투고 메타데이터와 현재 상태 |
+| `authors` | 교신·공동저자와 순서 |
+| `manuscript_files` | Storage 객체의 권한·버전 메타데이터 |
+| `reviewer_assignments` | 심사위원 배정, 응답, 기한, 라운드 |
+| `reviews` | 판정, 저자용 의견, 편집위원용 의견 |
+| `editorial_decisions` | 편집 판정과 저자 통지 내용 |
+| `manuscript_status_history` | 이전/신규 상태, 변경자, 변경시각, 사유 |
+| `issues` | 권·호와 발행 상태 |
+| `published_articles` | 게재확정 논문과 발행호 연결 |
+
+상태값은 `DRAFT → SUBMITTED → RECEIVED → FORMAT_REVIEW → REVIEWER_SELECTION → UNDER_REVIEW → REVISION_REQUESTED → REVISION_SUBMITTED → RE_REVIEW → ACCEPTED/ACCEPT_WITH_REVISIONS/REJECTED → FINAL_ACCEPTED → PUBLISHED`입니다.
+
+마이그레이션은 [supabase/migrations](./supabase/migrations)에 순서대로 저장되어 있습니다.
+
+- `20260728165759_initial_schema.sql`: enum, 테이블, 트리거, 인덱스
+- `20260728165805_rls_and_workflow.sql`: RLS, 역할별 정책, 업무 RPC
+- `20260728165955_storage_buckets.sql`: 5개 Storage bucket
+- `20260728172051_harden_file_metadata_policy.sql`: 파일 메타데이터 정책 강화
+- `20260728172253_fix_workflow_enum_casts.sql`: 상태 전이 enum 보강
+- `20260729010000_storage_object_policies.sql`: Storage 객체 정책
+
+## 개발환경 실행
+
+요구사항은 Node.js 22.13 이상과 pnpm 11.9입니다.
 
 ```bash
-npm install
-npm run dev
-npm run build
+pnpm install --frozen-lockfile
+cp .env.example .env.local
+pnpm dev
 ```
 
-This starter does not use `wrangler.jsonc`.
+`.env.local`에는 현재 연결할 프로젝트의 공개 값만 설정합니다.
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+환경파일은 `.gitignore` 대상이며 `.env.example`만 커밋합니다. 로컬 접속 주소는 개발 서버 출력에 따릅니다.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Supabase 설정과 migration
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+Supabase CLI로 새 환경을 구성할 때 다음 순서로 실행합니다.
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push
+supabase functions deploy file-access
+supabase gen types typescript --linked --schema public > lib/supabase/database.types.ts
+```
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+현재 연결 프로젝트 `sjzzbytpyinktxoddmin`에는 스키마·RLS·bucket 마이그레이션과 `file-access` 함수가 반영되어 있습니다. `storage.objects`는 Storage 서비스 소유 테이블이므로, `20260729010000_storage_object_policies.sql`이 일반 migration 계정에서 소유권 오류를 내면 Supabase Dashboard의 SQL Editor 또는 Storage 정책 UI처럼 Storage 정책을 변경할 권한이 있는 경로에서 해당 파일만 적용하고 아래 쿼리로 확인합니다.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+```sql
+select policyname, cmd
+from pg_policies
+where schemaname = 'storage' and tablename = 'objects';
+```
 
-## Useful Commands
+정책을 적용하기 전에도 비공개 bucket은 기본 거부 상태이며, 애플리케이션의 실제 업로드·다운로드는 권한을 재검증하는 `file-access` Edge Function을 통과합니다. 정책 적용 뒤에도 같은 함수를 기본 경로로 유지합니다.
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+Supabase Dashboard의 **Authentication → URL Configuration**에는 운영 URL과 리다이렉트 URL을 등록합니다.
 
-## Learn More
+```text
+Site URL: https://OWNER.github.io/REPOSITORY/
+Redirect URLs: https://OWNER.github.io/REPOSITORY/**
+```
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+## Storage 구조와 접근 원칙
+
+| Bucket | 공개 여부 | 파일 |
+| --- | --- | --- |
+| `manuscripts` | 비공개 | 최초 원고, 익명 원고 |
+| `revisions` | 비공개 | 수정 원고와 익명 수정본 |
+| `review-files` | 비공개 | 심사의견서 첨부 |
+| `final-files` | 비공개 | 게재확정 최종본 |
+| `published` | 공개 | 발행 승인된 최종 PDF |
+
+객체 경로에는 이메일이나 이름을 사용하지 않고 UUID만 사용합니다. Reviewer용 원고 목록·파일 목록은 작성자 테이블을 직접 열지 않는 보안 RPC가 필요한 필드만 반환합니다. Author는 배정·심사위원 프로필을 조회할 수 없고, Reviewer는 저자·소속·이메일을 조회할 수 없습니다.
+
+## 최초 관리자 계정 생성
+
+1. 운영할 이메일로 화면에서 일반 회원가입을 완료합니다.
+2. Supabase Dashboard SQL Editor에서 그 계정 하나만 최초 관리자로 승격합니다.
+
+```sql
+update public.profiles
+set role = 'ADMIN'
+where email = 'admin@example.org';
+```
+
+3. 다시 로그인한 뒤 관리자 대시보드의 사용자 관리에서 `REVIEWER`, `EDITOR`, `ADMIN` 역할을 부여합니다.
+
+일반 사용자는 `profiles.role`을 직접 수정할 권한이 없습니다. 이후 역할 변경은 `ADMIN`만 호출 가능한 `set_user_role` RPC를 거치며 `profile_role_history`에 기록됩니다.
+
+## GitHub Pages 배포
+
+[.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml)이 `main` push 또는 수동 실행 시 정적 빌드와 배포를 수행합니다.
+
+1. GitHub 저장소 **Settings → Pages → Build and deployment**를 `GitHub Actions`로 설정합니다.
+2. **Settings → Secrets and variables → Actions → Variables**에 다음 repository variable을 만듭니다.
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL` — 최종 Pages URL
+3. Supabase Auth의 운영 URL을 위 Pages URL로 등록합니다.
+4. `main`에 push하거나 `Deploy GitHub Pages` workflow를 수동 실행합니다.
+
+`next.config.ts`가 `GITHUB_REPOSITORY`를 읽어 프로젝트 Pages의 `basePath`와 asset prefix를 자동 적용합니다. 로컬에서 같은 산출물을 검증하려면 `pnpm build:pages`를 실행하고 `out/`을 확인합니다.
+
+## 테스트
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build:pages
+```
+
+데이터베이스 테스트는 트랜잭션 안에서 가상 사용자를 만들고 마지막에 모두 rollback하므로 운영 데이터를 남기지 않습니다.
+
+```bash
+supabase db reset                         # 로컬 전체 migration 적용
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/workflow.sql
+```
+
+- [supabase/tests/workflow.sql](./supabase/tests/workflow.sql): 회원·투고·원고번호·접수·2인 배정·심사·수정·게재확정·최종본·발행호의 15단계 흐름
+- [supabase/tests/rls.sql](./supabase/tests/rls.sql): 타 저자 접근, Reviewer의 저자정보 접근, Author의 Reviewer 정보 접근, 일반 사용자의 관리자 기능·역할 변경 차단
+- [tests/rendered-html.test.mjs](./tests/rendered-html.test.mjs): 정적 렌더, 비밀키 유출, RLS/Storage migration, Reviewer UI 쿼리 경계
+
+운영 전에는 실제 이메일 인증 정책에 맞춰 AUTHOR 2명, REVIEWER 2명, EDITOR 1명, ADMIN 1명의 별도 테스트 계정으로 같은 시나리오를 한 번 더 수행하는 것을 권장합니다.
+
+## 백업과 복구
+
+운영 백업은 데이터베이스와 Storage를 따로 보관합니다.
+
+```bash
+supabase db dump --linked -f backups/schema.sql
+supabase db dump --linked --data-only -f backups/data.sql
+```
+
+- Supabase Dashboard의 예약 백업/PITR를 프로젝트 요금제에 맞게 활성화합니다.
+- 비공개 bucket 파일은 정기적으로 별도 암호화 저장소에 동기화하고 객체 경로를 유지합니다.
+- `manuscript_files` 데이터와 실제 Storage 객체 목록의 불일치 여부를 정기 점검합니다.
+- 복구 훈련은 별도 Supabase 프로젝트에서 migration → data → Storage 순으로 수행합니다.
+- `backups/`에는 개인정보와 원고가 포함되므로 Git에 커밋하지 않습니다.
+
+## 운영 주의사항
+
+- 저자가 업로드하는 심사용 파일에서 이름·소속·감사의 글·문서 속성이 제거되었는지 편집자가 형식검토 단계에서 확인합니다.
+- 편집 판정과 상태 전이는 UI 우회 입력이 아닌 보안 RPC를 통해 처리합니다.
+- 발행 PDF만 `published` bucket으로 옮기고, 원고·심사·최종 파일은 계속 비공개로 유지합니다.
+- 회원 탈퇴나 논문 삭제는 기록보존 정책을 먼저 정한 뒤 별도 절차로 처리합니다. 현재 UI에는 파괴적 삭제 기능이 없습니다.

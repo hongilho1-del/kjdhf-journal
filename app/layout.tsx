@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
+const siteUrl = `${(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")}/`;
 
-  return {
-    title: "건강체력연구소 | Health & Fitness Lab",
-    description:
-      "건강체력을 과학적으로 측정하고 해석해, 오래 지속할 수 있는 움직임을 연구합니다.",
-    openGraph: {
-      title: "건강체력연구소",
-      description: "몸의 데이터를 일상의 변화로 연결합니다.",
-      locale: "ko_KR",
-      type: "website",
-      url: origin,
-      images: [{ url: `${origin}/og.png`, width: 1729, height: 910, alt: "건강체력연구소" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "건강체력연구소",
-      description: "몸의 데이터를 일상의 변화로 연결합니다.",
-      images: [`${origin}/og.png`],
-    },
-  };
-}
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: "한국 디지털 건강체력학회지 | 온라인 논문투고·심사",
+  description: "한국 디지털 건강체력학회지의 논문투고, 이중맹검 심사, 편집판정과 발행을 위한 온라인 시스템입니다.",
+  openGraph: { title: "한국 디지털 건강체력학회지", description: "연구가 학술 기록이 되는 안전한 투고·심사 시스템", locale: "ko_KR", type: "website", images: [{ url: new URL("og.png", siteUrl), width: 1536, height: 1024, alt: "한국 디지털 건강체력학회지" }] },
+  twitter: { card: "summary_large_image", title: "한국 디지털 건강체력학회지", description: "온라인 논문투고·이중맹검 심사 시스템", images: [new URL("og.png", siteUrl)] },
+};
 
 export default function RootLayout({
   children,

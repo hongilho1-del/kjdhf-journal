@@ -6,50 +6,57 @@ async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
-
   return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html", host: "localhost" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
+    new Request("http://localhost/", { headers: { accept: "text/html", host: "localhost" } }),
+    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
+    { waitUntil() {}, passThroughOnException() {} },
   );
 }
 
-test("server-renders the health and fitness research lab", async () => {
+test("server-renders the Korean digital health and fitness journal", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
-  assert.match(html, /<title>건강체력연구소 \| Health &amp; Fitness Lab<\/title>/i);
-  assert.match(html, /몸의 데이터를/);
-  assert.match(html, /생애주기 건강체력/);
-  assert.match(html, /움직임과 운동처방/);
-  assert.match(html, /현장 기반 데이터/);
-  assert.match(html, /property="og:image" content="http:\/\/localhost\/og\.png"/i);
-  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
+  assert.match(html, /한국 디지털 건강체력학회지/);
+  assert.match(html, /건강체력 연구가/);
+  assert.match(html, /이중맹검 심사/);
+  assert.match(html, /논문투고·심사 시작/);
 });
 
-test("keeps the finished site free of starter preview code", async () => {
-  const [page, layout, packageJson] = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
+test("keeps privileged credentials out of frontend source", async () => {
+  const files = await Promise.all([
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/supabase/client.ts", import.meta.url), "utf8"),
+    readFile(new URL("../.env.example", import.meta.url), "utf8"),
   ]);
+  const source = files.join("\n");
+  assert.doesNotMatch(source, /service[_-]?role/i);
+  assert.doesNotMatch(source, /SUPABASE_ACCESS_TOKEN|DATABASE_PASSWORD/i);
+  assert.match(source, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+});
 
-  assert.match(page, /HEALTH &amp; FITNESS RESEARCH LAB/);
-  assert.match(layout, /public\/og\.png|\/og\.png/);
-  assert.match(layout, /lang="ko"/);
-  assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
-  assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/);
-  assert.doesNotMatch(packageJson, /react-loading-skeleton|site-creator-vinext-starter/);
+test("migrations define RLS, audit history, and private storage boundaries", async () => {
+  const [schema, rls, buckets, policies] = await Promise.all([
+    readFile(new URL("../supabase/migrations/20260728165759_initial_schema.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260728165805_rls_and_workflow.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729010000_storage_object_policies.sql", import.meta.url), "utf8"),
+  ]);
+  for (const table of ["profiles", "manuscripts", "authors", "manuscript_files", "reviewer_assignments", "reviews", "editorial_decisions", "manuscript_status_history", "issues", "published_articles"]) {
+    assert.match(schema, new RegExp(`create table public\\.${table}\\b`, "i"));
+    assert.match(rls, new RegExp(`alter table public\\.${table} enable row level security`, "i"));
+  }
+  assert.match(rls, /get_reviewer_manuscripts/);
+  assert.doesNotMatch(rls.match(/get_reviewer_manuscripts[\s\S]*?\$\$;/)?.[0] ?? "", /authors|email|affiliation/i);
+  for (const bucket of ["manuscripts", "revisions", "review-files", "final-files", "published"]) assert.match(buckets, new RegExp(`'${bucket}'`));
+  assert.match(policies, /journal_private_files_select/);
+});
+
+test("reviewer UI never queries author identity tables", async () => {
+  const reviewer = await readFile(new URL("../components/reviewer-dashboard.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(reviewer, /\.from\(["']authors["']\)|\.from\(["']profiles["']\)/);
+  assert.match(reviewer, /get_reviewer_manuscripts/);
+  assert.match(reviewer, /get_reviewer_files/);
 });
