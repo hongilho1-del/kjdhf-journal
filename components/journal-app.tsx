@@ -20,6 +20,7 @@ import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type View = "home" | "institute" | "notice" | "events" | "e-journal" | "submission" | "author-review-result" | "dashboard" | "profile" | JournalInformationPage;
 const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const INSTITUTE_URL = "https://prhome.kongju.ac.kr/sites/hpflab";
 const ROLE_ORDER: AppRole[] = ["AUTHOR", "REVIEWER", "EDITOR", "ADMIN"];
 
 function publicViewFromHash(): View {
@@ -172,13 +173,6 @@ export function JournalApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function openInstitute() {
-    setView("institute");
-    setBoardPostId(null);
-    window.history.pushState(null, "", "#health-fitness-institute");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   function openInformation(page: JournalInformationPage) {
     setView(page);
     setBoardPostId(null);
@@ -196,7 +190,7 @@ export function JournalApp() {
           <p>한국 디지털 건강체력학회지</p>
           <nav aria-label="사용자 메뉴">
             <a href="https://www.kongju.ac.kr/" target="_blank" rel="noreferrer">국립공주대학교</a>
-            <button type="button" onClick={openInstitute}>건강체력연구소</button>
+            <a href={INSTITUTE_URL} target="_blank" rel="noreferrer">건강체력연구소</a>
             <button type="button" onClick={() => openHomeSection("journal-about")}>학회지 안내</button>
             {!session && <button type="button" onClick={() => openAuth()}>로그인</button>}
             {!session && <button type="button" onClick={() => openAuth(false, "signup")}>회원가입</button>}

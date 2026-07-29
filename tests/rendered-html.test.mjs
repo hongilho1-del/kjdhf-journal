@@ -167,6 +167,7 @@ test("ships both supplied logos with the darker Kongju palette", async () => {
   assert.match(css, /--ink:\s*#061a38/i);
   assert.match(css, /--forest:\s*#082b5d/i);
   assert.match(app, /logos\/kjdhf-logo-transparent\.png/);
+  assert.match(app, /https:\/\/prhome\.kongju\.ac\.kr\/sites\/hpflab/);
   assert.doesNotMatch(css.match(/\.jams-footer \.footer-brand[^}]+}/)?.[0] ?? "", /background:\s*white/i);
 });
 
