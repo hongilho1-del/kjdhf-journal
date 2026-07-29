@@ -209,7 +209,11 @@ export function JournalApp() {
             <img className="journal-brand-logo" src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} />
           </button>
           <div className="jams-header-tools">
-            <span>국립공주대학교 건강체력연구소</span>
+            <a className="institute-header-mark" href={INSTITUTE_URL} target="_blank" rel="noreferrer">
+              <span>국립공주대학교 건강체력연구소</span>
+              {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
+              <img src={`${assetBasePath}/logos/health-fitness-institute-logo.png`} alt="건강체력연구소" width={780} height={510} />
+            </a>
             {session && profile && (
               <button className="profile-button" type="button" onClick={() => setView("profile")}>
                 <span>{profile.full_name?.slice(0, 1) || "나"}</span><b>{profile.full_name || profile.email}</b><small>{roles.map((role) => ROLE_LABELS[role]).join(" · ")}</small>

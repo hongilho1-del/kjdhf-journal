@@ -8,8 +8,8 @@ import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const fallbackNotices: BoardPost[] = [
-  { id: "fallback-system", category: "NOTICE", title: "온라인 논문투고·심사 시스템 이용 안내", content: "저자, 심사위원, 편집위원은 로그인 후 역할별 업무를 이용할 수 있습니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: true, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
-  { id: "fallback-ethics", category: "NOTICE", title: "연구윤리 및 이중맹검 심사 원칙 안내", content: "저자와 심사위원의 신원을 서로 공개하지 않는 이중맹검 심사를 원칙으로 합니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: false, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
+  { id: "fallback-system", category: "NOTICE", title: "온라인 논문투고·심사 시스템 이용 안내", content: "저자, 심사위원, 편집위원은 로그인 후 역할별 업무를 이용할 수 있습니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: true, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, attachment_name: null, attachment_path: null, attachment_mime_type: null, attachment_size_bytes: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
+  { id: "fallback-ethics", category: "NOTICE", title: "연구윤리 및 이중맹검 심사 원칙 안내", content: "저자와 심사위원의 신원을 서로 공개하지 않는 이중맹검 심사를 원칙으로 합니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: false, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, attachment_name: null, attachment_path: null, attachment_mime_type: null, attachment_size_bytes: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
 ];
 
 const workflow = [

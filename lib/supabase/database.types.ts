@@ -115,6 +115,10 @@ export type Database = {
       }
       board_posts: {
         Row: {
+          attachment_mime_type: string | null
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_size_bytes: number | null
           author_id: string | null
           category: string
           content: string
@@ -130,6 +134,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachment_mime_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size_bytes?: number | null
           author_id?: string | null
           category: string
           content: string
@@ -145,6 +153,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachment_mime_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size_bytes?: number | null
           author_id?: string | null
           category?: string
           content?: string

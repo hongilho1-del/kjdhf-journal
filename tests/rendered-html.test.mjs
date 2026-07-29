@@ -27,7 +27,7 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /건강체력연구소/);
   assert.match(html, /관리자 로그인/);
   assert.match(html, /logos\/kjdhf-logo\.png/);
-  assert.match(html, /logos\/health-fitness-institute-logo\.png\?v=2/);
+  assert.match(html, /logos\/health-fitness-institute-logo\.png\?v=3/);
   assert.match(html, /논문투고 규정/);
   assert.match(html, /편집위원회/);
   assert.match(html, /연구 윤리위원회/);
@@ -221,6 +221,26 @@ test("public boards avoid admin function errors and journal information uses one
   assert.match(policy, /using \(is_published\)/);
   assert.match(policy, /board_posts_admin_read/);
   assert.doesNotMatch(policy.match(/board_posts_public_read[\s\S]*?;/)?.[0] ?? "", /is_admin/);
+});
+
+test("admins can attach a public manuscript template and the journal page downloads it", async () => {
+  const [management, information, types, migration, app, layout] = await Promise.all([
+    readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/supabase/database.types.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729201000_journal_template_attachment.sql", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(management, /name="attachment"/);
+  assert.match(management, /storage\.from\("published"\)\.upload/);
+  assert.match(information, /getPublicUrl/);
+  assert.match(information, /논문 양식 다운로드/);
+  assert.match(types, /attachment_path/);
+  assert.match(migration, /journal_template_files_admin_insert/);
+  assert.match(migration, /public\.is_admin\(\)/);
+  assert.match(app, /institute-header-mark/);
+  assert.match(layout, /rel="shortcut icon"/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {

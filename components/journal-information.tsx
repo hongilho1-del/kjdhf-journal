@@ -9,6 +9,14 @@ import {
 } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
+type JournalPageContent = {
+  content: string;
+  attachment_name: string | null;
+  attachment_path: string | null;
+  attachment_mime_type: string | null;
+  attachment_size_bytes: number | null;
+};
+
 export { isJournalInformationPage, journalInformationNavigation, type JournalInformationPage } from "@/lib/journal-pages";
 
 export function JournalInformation({
@@ -21,15 +29,19 @@ export function JournalInformation({
   onBackHome: () => void;
 }) {
   const copy = getJournalPageDefinition(page);
-  const [contentByPage, setContentByPage] = useState<Partial<Record<JournalInformationPage, string>>>({});
-  const content = contentByPage[page] ?? "";
+  const [contentByPage, setContentByPage] = useState<Partial<Record<JournalInformationPage, JournalPageContent>>>({});
+  const pageContent = contentByPage[page];
+  const content = pageContent?.content ?? "";
   const loading = isSupabaseConfigured && contentByPage[page] === undefined;
+  const attachmentUrl = pageContent?.attachment_path
+    ? getSupabaseClient().storage.from("published").getPublicUrl(pageContent.attachment_path, { download: pageContent.attachment_name ?? true }).data.publicUrl
+    : null;
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let active = true;
-    void getSupabaseClient().from("board_posts").select("content").eq("title", getJournalPageStorageTitle(page)).eq("is_published", true).maybeSingle().then(({ data }) => {
-      if (active) setContentByPage((current) => ({ ...current, [page]: data?.content ?? "" }));
+    void getSupabaseClient().from("board_posts").select("content,attachment_name,attachment_path,attachment_mime_type,attachment_size_bytes").eq("title", getJournalPageStorageTitle(page)).eq("is_published", true).maybeSingle().then(({ data }) => {
+      if (active) setContentByPage((current) => ({ ...current, [page]: data ?? { content: "", attachment_name: null, attachment_path: null, attachment_mime_type: null, attachment_size_bytes: null } }));
     });
     return () => { active = false; };
   }, [page]);
@@ -64,7 +76,7 @@ export function JournalInformation({
           <div className="community-heading">
             <div><small>{copy.eyebrow}</small><h2>{copy.label}</h2></div>
           </div>
-          {content ? <article className="journal-information-body">{content}</article> : <div className="journal-information-placeholder">
+          {content || attachmentUrl ? <article className="journal-information-body"><div className="journal-information-copy">{content}</div>{attachmentUrl && <a className="journal-template-download" href={attachmentUrl}><span>논문 양식 다운로드</span><strong>{pageContent?.attachment_name}</strong><b>↓</b></a>}</article> : <div className="journal-information-placeholder">
             <span>CONTENT PREPARING</span>
             <h3>{loading ? "내용을 불러오고 있습니다." : "내용을 준비하고 있습니다."}</h3>
             <p>{copy.description}<br />관리자가 내용을 등록하면 이 페이지에 바로 표시됩니다.</p>
