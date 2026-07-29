@@ -1687,6 +1687,27 @@ button:focus-visible {
 .file-list button small { color: rgba(255,255,255,.55); font-size: 8px; }
 .file-list button b { color: var(--lime); font-size: 9px; }
 .review-form { padding-top: 20px; border-top: 1px solid var(--line); }
+.numbered-review-comments { display: grid; margin: 0; padding: 20px; gap: 14px; border: 1px solid var(--line); background: #f6f8fa; }
+.numbered-review-comments legend { padding: 0 7px; color: var(--ink); font-size: 11px; font-weight: 850; }
+.numbered-review-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.numbered-review-heading p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
+.numbered-review-heading span { flex: none; padding: 6px 9px; background: #e5eef5; color: var(--forest-2); font-size: 8px; font-weight: 850; }
+.numbered-review-list { display: grid; gap: 9px; }
+.numbered-review-item { display: grid; min-height: auto; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: start; gap: 9px; }
+.numbered-review-item > span { display: grid; width: 30px; height: 30px; place-items: center; background: var(--forest-2); color: white; font-size: 9px; font-weight: 900; }
+.numbered-review-item textarea { min-height: 76px; resize: vertical; }
+.numbered-review-item > button { min-height: 30px; padding: 0 8px; border: 1px solid #c8a9a3; color: #8a352b; font-size: 8px; font-weight: 800; }
+.add-review-comment { justify-self: start; min-height: 36px; padding: 0 13px; border: 1px solid var(--forest-2); background: white; color: var(--forest-2); font-size: 9px; font-weight: 850; }
+.role-workspace-switcher { display: grid; margin-bottom: 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.role-workspace-switcher button { display: grid; min-height: 68px; padding: 13px 16px; align-content: center; gap: 4px; border: 1px solid var(--line); background: white; text-align: left; }
+.role-workspace-switcher button span { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .08em; }
+.role-workspace-switcher button strong { color: var(--ink); font-size: 12px; }
+.role-workspace-switcher button.active { border-color: var(--forest-2); background: var(--forest-2); }
+.role-workspace-switcher button.active span { color: #8ad9f7; }
+.role-workspace-switcher button.active strong { color: white; }
+.role-checkboxes { display: flex; min-width: 300px; flex-wrap: wrap; gap: 7px 12px; }
+.role-checkboxes label { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 9px; font-weight: 750; }
+.role-checkboxes input { width: 14px; height: 14px; accent-color: var(--forest-2); }
 
 .editorial-title-row { display: flex; margin: 8px 0 26px; padding-right: 54px; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .editorial-title-row h2 { margin: 0; font-size: 28px; letter-spacing: -.06em; }

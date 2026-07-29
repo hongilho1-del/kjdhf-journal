@@ -243,4 +243,22 @@ test("reviewer UI never queries author identity tables", async () => {
   assert.doesNotMatch(reviewer, /\.from\(["']authors["']\)|\.from\(["']profiles["']\)/);
   assert.match(reviewer, /get_reviewer_manuscripts/);
   assert.match(reviewer, /get_reviewer_files/);
+  assert.match(reviewer, /MIN_AUTHOR_COMMENT_ITEMS\s*=\s*10/);
+  assert.match(reviewer, /심사의견 항목 추가/);
+});
+
+test("one account can receive multiple role workspaces without losing author access", async () => {
+  const [app, editor, migration] = await Promise.all([
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729172000_multi_role_accounts.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(app, /profile_roles/);
+  assert.match(app, /role-workspace-switcher/);
+  assert.match(editor, /set_user_roles/);
+  assert.match(editor, /역할 중복 부여/);
+  assert.match(migration, /create table public\.profile_roles/i);
+  assert.match(migration, /create or replace function public\.has_app_role/i);
+  assert.match(migration, /create or replace function public\.set_user_roles/i);
+  assert.match(migration, /Authors cannot review their own manuscript/i);
 });

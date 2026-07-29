@@ -14,12 +14,13 @@ import { ManuscriptSubmissionPage } from "@/components/manuscript-submission-pag
 import { ProfilePanel } from "@/components/profile-panel";
 import { PublicHome } from "@/components/public-home";
 import { ReviewerDashboard } from "@/components/reviewer-dashboard";
-import { ROLE_LABELS, type BoardCategory, type Profile } from "@/lib/journal";
+import { ROLE_LABELS, type AppRole, type BoardCategory, type Profile } from "@/lib/journal";
 import { isJournalInformationPage, type JournalInformationPage } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type View = "home" | "institute" | "notice" | "events" | "e-journal" | "submission" | "author-review-result" | "dashboard" | "profile" | JournalInformationPage;
 const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const ROLE_ORDER: AppRole[] = ["AUTHOR", "REVIEWER", "EDITOR", "ADMIN"];
 
 function publicViewFromHash(): View {
   if (typeof window === "undefined") return "home";
@@ -41,6 +42,8 @@ function hasStandalonePublicHash() {
 export function JournalApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [activeRole, setActiveRole] = useState<AppRole | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [adminLogin, setAdminLogin] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -49,10 +52,21 @@ export function JournalApp() {
   const [error, setError] = useState("");
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data, error: profileError } = await getSupabaseClient().from("profiles").select("*").eq("id", userId).maybeSingle();
+    const supabase = getSupabaseClient();
+    const [{ data, error: profileError }, roleResult] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("profile_roles").select("role").eq("profile_id", userId),
+    ]);
     if (profileError) setError(profileError.message);
     else if (!data) setError("사용자 프로필을 준비 중입니다. 잠시 후 새로고침해 주세요.");
-    else { setProfile(data); setError(""); }
+    else {
+      const assignedRoles = roleResult.error ? [data.role] : (roleResult.data ?? []).map((item) => item.role);
+      const nextRoles = ROLE_ORDER.filter((role) => role === "AUTHOR" || assignedRoles.includes(role));
+      setProfile(data);
+      setRoles(nextRoles);
+      setActiveRole((current) => current && nextRoles.includes(current) ? current : data.role);
+      setError("");
+    }
   }, []);
 
   useEffect(() => {
@@ -72,6 +86,8 @@ export function JournalApp() {
         if (!hasStandalonePublicHash()) setView("dashboard");
       } else {
         setProfile(null);
+        setRoles([]);
+        setActiveRole(null);
         setView("home");
       }
     });
@@ -170,6 +186,9 @@ export function JournalApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const dashboardRole = profile && activeRole && roles.includes(activeRole) ? activeRole : profile?.role ?? "AUTHOR";
+  const activeProfile = profile ? { ...profile, role: dashboardRole } : null;
+
   return (
     <main>
       <div className="jams-utility">
@@ -199,7 +218,7 @@ export function JournalApp() {
             <span>국립공주대학교 건강체력연구소</span>
             {session && profile ? (
               <button className="profile-button" type="button" onClick={() => setView("profile")}>
-                <span>{profile.full_name?.slice(0, 1) || "나"}</span><b>{profile.full_name || profile.email}</b><small>{ROLE_LABELS[profile.role]}</small>
+                <span>{profile.full_name?.slice(0, 1) || "나"}</span><b>{profile.full_name || profile.email}</b><small>{roles.map((role) => ROLE_LABELS[role]).join(" · ")}</small>
               </button>
             ) : (
               <button className="jams-login-button" type="button" onClick={() => openAuth()}>온라인 투고·심사</button>
@@ -235,9 +254,10 @@ export function JournalApp() {
         </div>
       </header>
 
-      {view === "home" ? <PublicHome onEnter={enterSystem} onSubmit={openSubmission} onOpenEJournal={openEJournal} onOpenBoard={openBoard} onOpenInformation={openInformation} /> : view === "institute" ? <HealthFitnessInstitute onBackHome={openHome} /> : view === "e-journal" ? <EJournalPage key={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("tab") === "journal" ? "journal" : "search"} initialTab={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("tab") === "journal" ? "journal" : "search"} onBackHome={openHome} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : isJournalInformationPage(view) ? <JournalInformation page={view} onNavigate={openInformation} onBackHome={openHome} /> : !session || !profile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => openAuth()}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : view === "submission" ? <section className="workspace submission-workspace"><div className="shell"><ManuscriptSubmissionPage profile={profile} onMyPage={openMyPage} /></div></section> : view === "author-review-result" ? <AuthorReviewResultPage manuscriptId={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("manuscript")} onMyPage={openMyPage} /> : <section className="workspace"><div className="shell my-page-heading"><div><small>PERSONAL JOURNAL SERVICE</small><h1>My Page</h1></div><p><strong>{profile.full_name || profile.email}</strong>님의 {ROLE_LABELS[profile.role]} 전용 업무공간입니다.</p></div><div className="shell workspace-shell">
-        <div className="workspace-top"><div><span>{ROLE_LABELS[profile.role]}</span><strong>{profile.email}</strong></div><nav><button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>대시보드</button><button className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}>내 정보</button></nav></div>
-        {view === "profile" ? <ProfilePanel profile={profile} onSaved={() => loadProfile(profile.id)} /> : profile.role === "AUTHOR" ? <AuthorDashboard profile={profile} /> : profile.role === "REVIEWER" ? <ReviewerDashboard profile={profile} /> : <EditorDashboard profile={profile} />}
+      {view === "home" ? <PublicHome onEnter={enterSystem} onSubmit={openSubmission} onOpenEJournal={openEJournal} onOpenBoard={openBoard} onOpenInformation={openInformation} /> : view === "institute" ? <HealthFitnessInstitute onBackHome={openHome} /> : view === "e-journal" ? <EJournalPage key={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("tab") === "journal" ? "journal" : "search"} initialTab={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("tab") === "journal" ? "journal" : "search"} onBackHome={openHome} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : isJournalInformationPage(view) ? <JournalInformation page={view} onNavigate={openInformation} onBackHome={openHome} /> : !session || !profile || !activeProfile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => openAuth()}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : view === "submission" ? <section className="workspace submission-workspace"><div className="shell"><ManuscriptSubmissionPage profile={{ ...profile, role: "AUTHOR" }} onMyPage={openMyPage} /></div></section> : view === "author-review-result" ? <AuthorReviewResultPage manuscriptId={new URLSearchParams(typeof window === "undefined" ? "" : window.location.hash.split("?")[1] ?? "").get("manuscript")} onMyPage={openMyPage} /> : <section className="workspace"><div className="shell my-page-heading"><div><small>PERSONAL JOURNAL SERVICE</small><h1>My Page</h1></div><p><strong>{profile.full_name || profile.email}</strong>님의 역할별 업무공간입니다.</p></div><div className="shell workspace-shell">
+        <div className="role-workspace-switcher" aria-label="내 역할별 페이지">{roles.map((role) => <button className={view === "dashboard" && dashboardRole === role ? "active" : ""} type="button" key={role} onClick={() => { setActiveRole(role); setView("dashboard"); }}><span>{ROLE_LABELS[role]}</span><strong>{role === "AUTHOR" ? "투고자 페이지" : role === "REVIEWER" ? "심사위원 페이지" : role === "EDITOR" ? "편집위원 페이지" : "관리자 페이지"}</strong></button>)}</div>
+        <div className="workspace-top"><div><span>{ROLE_LABELS[dashboardRole]}</span><strong>{profile.email}</strong></div><nav><button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>대시보드</button><button className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}>내 정보</button></nav></div>
+        {view === "profile" ? <ProfilePanel profile={activeProfile} roles={roles} onSaved={() => loadProfile(profile.id)} /> : dashboardRole === "AUTHOR" ? <AuthorDashboard profile={activeProfile} /> : dashboardRole === "REVIEWER" ? <ReviewerDashboard profile={activeProfile} /> : <EditorDashboard profile={activeProfile} />}
       </div></section>}
 
       <footer className="jams-footer">

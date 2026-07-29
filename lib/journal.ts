@@ -5,6 +5,7 @@ export type ManuscriptStatus = Database["public"]["Enums"]["manuscript_status"];
 export type ReviewRecommendation = Database["public"]["Enums"]["review_recommendation"];
 export type EditorialDecision = Database["public"]["Enums"]["editorial_decision_type"];
 export type Profile = Tables<"profiles">;
+export type ProfileRole = Tables<"profile_roles">;
 export type Manuscript = Tables<"manuscripts">;
 export type Assignment = Tables<"reviewer_assignments">;
 export type Review = Tables<"reviews">;

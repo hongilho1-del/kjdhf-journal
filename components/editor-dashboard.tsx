@@ -15,6 +15,7 @@ import {
   type Manuscript,
   type ManuscriptStatus,
   type Profile,
+  type ProfileRole,
 } from "@/lib/journal";
 import type { Tables } from "@/lib/supabase/database.types";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -47,6 +48,7 @@ function assignmentErrorMessage(message: string) {
 export function EditorDashboard({ profile }: { profile: Profile }) {
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profileRoles, setProfileRoles] = useState<ProfileRole[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -58,17 +60,19 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     const supabase = getSupabaseClient();
-    const [manuscriptResult, profileResult, assignmentResult, reviewResult, issueResult] = await Promise.all([
+    const [manuscriptResult, profileResult, profileRoleResult, assignmentResult, reviewResult, issueResult] = await Promise.all([
       supabase.from("manuscripts").select("*").neq("status", "DRAFT").order("submitted_at", { ascending: false, nullsFirst: false }),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("profile_roles").select("*"),
       supabase.from("reviewer_assignments").select("*").order("due_at", { ascending: true }),
       supabase.from("reviews").select("*, reviewer_assignments!inner(manuscript_id,reviewer_id,round_no)"),
       supabase.from("issues").select("*").order("year", { ascending: false }).order("issue_number", { ascending: false }),
     ]);
-    const firstError = [manuscriptResult.error, profileResult.error, assignmentResult.error, reviewResult.error, issueResult.error].find(Boolean);
+    const firstError = [manuscriptResult.error, profileResult.error, profileRoleResult.error, assignmentResult.error, reviewResult.error, issueResult.error].find(Boolean);
     if (firstError) setMessage(firstError.message);
     setManuscripts(manuscriptResult.data ?? []);
     setProfiles(profileResult.data ?? []);
+    setProfileRoles(profileRoleResult.data ?? []);
     setAssignments(assignmentResult.data ?? []);
     setReviews((reviewResult.data ?? []) as Review[]);
     setIssues(issueResult.data ?? []);
@@ -96,11 +100,11 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
     <nav className="workspace-tabs" aria-label="편집관리 메뉴"><button className={tab === "manuscripts" ? "active" : ""} onClick={() => setTab("manuscripts")}>논문 진행현황</button>{profile.role === "ADMIN" && <><button className={tab === "users" ? "active" : ""} onClick={() => setTab("users")}>가입·권한 관리</button><button className={tab === "boards" ? "active" : ""} onClick={() => setTab("boards")}>공지·행사 관리</button><button className={tab === "journal-pages" ? "active" : ""} onClick={() => setTab("journal-pages")}>심사안내 관리</button><button className={tab === "issues" ? "active" : ""} onClick={() => setTab("issues")}>발행호 관리</button></>}</nav>
     {message && <div className="notice-box" role="status">{message}</div>}
     {tab === "manuscripts" && <ManuscriptBoard loading={loading} manuscripts={manuscripts} assignments={assignments} profiles={profiles} onSelect={setSelected} />}
-    {tab === "users" && profile.role === "ADMIN" && <UserManagement profiles={profiles} currentUserId={profile.id} onChanged={loadData} />}
+    {tab === "users" && profile.role === "ADMIN" && <UserManagement profiles={profiles} profileRoles={profileRoles} currentUserId={profile.id} onChanged={loadData} />}
     {tab === "boards" && profile.role === "ADMIN" && <BoardManagement />}
     {tab === "journal-pages" && profile.role === "ADMIN" && <JournalPageManagement profile={profile} />}
     {tab === "issues" && profile.role === "ADMIN" && <IssueManagement issues={issues} onChanged={loadData} />}
-    {selected && <EditorialDetail manuscript={selected} profiles={profiles} assignments={assignments} reviews={reviews} issues={issues} isAdmin={profile.role === "ADMIN"} onClose={() => setSelected(null)} onChanged={async () => { await loadData(); setSelected((current) => current ? manuscripts.find((item) => item.id === current.id) ?? current : null); }} />}
+    {selected && <EditorialDetail manuscript={selected} profiles={profiles} profileRoles={profileRoles} assignments={assignments} reviews={reviews} issues={issues} isAdmin={profile.role === "ADMIN"} onClose={() => setSelected(null)} onChanged={async () => { await loadData(); setSelected((current) => current ? manuscripts.find((item) => item.id === current.id) ?? current : null); }} />}
   </div>;
 }
 
@@ -119,7 +123,7 @@ function ManuscriptBoard({ loading, manuscripts, assignments, profiles, onSelect
   </section>;
 }
 
-function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, isAdmin, onClose, onChanged }: { manuscript: Manuscript; profiles: Profile[]; assignments: Assignment[]; reviews: Review[]; issues: Issue[]; isAdmin: boolean; onClose: () => void; onChanged: () => Promise<void> }) {
+function EditorialDetail({ manuscript, profiles, profileRoles, assignments, reviews, issues, isAdmin, onClose, onChanged }: { manuscript: Manuscript; profiles: Profile[]; profileRoles: ProfileRole[]; assignments: Assignment[]; reviews: Review[]; issues: Issue[]; isAdmin: boolean; onClose: () => void; onChanged: () => Promise<void> }) {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -129,7 +133,9 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
   const currentRoundAssignments = targetRoundAssignments.filter((item) => !["DECLINED", "CANCELLED"].includes(item.status));
   const manuscriptReviews = reviews.filter((item) => item.reviewer_assignments.manuscript_id === manuscript.id);
   const assignedReviewerIds = new Set(targetRoundAssignments.map((item) => item.reviewer_id));
-  const reviewers = profiles.filter((item) => item.role === "REVIEWER" && item.is_active && !assignedReviewerIds.has(item.id));
+  const authorUserIds = new Set(authors.map((author) => author.user_id).filter(Boolean));
+  const reviewerIds = new Set(profileRoles.filter((item) => item.role === "REVIEWER").map((item) => item.profile_id));
+  const reviewers = profiles.filter((item) => reviewerIds.has(item.id) && item.is_active && !assignedReviewerIds.has(item.id) && !authorUserIds.has(item.id));
   const assignmentAllowed = (["FORMAT_REVIEW", "REVIEWER_SELECTION", "REVISION_SUBMITTED", "RE_REVIEW"] as ManuscriptStatus[]).includes(manuscript.status);
 
   useEffect(() => { void getSupabaseClient().from("authors").select("*").eq("manuscript_id", manuscript.id).order("sort_order").then(({ data }) => setAuthors(data ?? [])); }, [manuscript.id]);
@@ -184,12 +190,28 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
   </section></div>;
 }
 
-function UserManagement({ profiles, currentUserId, onChanged }: { profiles: Profile[]; currentUserId: string; onChanged: () => Promise<void> }) {
+function UserManagement({ profiles, profileRoles, currentUserId, onChanged }: { profiles: Profile[]; profileRoles: ProfileRole[]; currentUserId: string; onChanged: () => Promise<void> }) {
   const [message, setMessage] = useState("");
-  async function changeRole(userId: string, role: AppRole) { const { error } = await getSupabaseClient().rpc("set_user_role", { target_user_id: userId, new_role: role }); if (error) setMessage(error.message); else { setMessage("역할을 변경했습니다."); await onChanged(); } }
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  function rolesFor(person: Profile) {
+    const assigned = profileRoles.filter((item) => item.profile_id === person.id).map((item) => item.role);
+    return (["AUTHOR", ...assigned, person.role] as AppRole[]).filter((role, index, all) => all.indexOf(role) === index);
+  }
+  async function toggleRole(person: Profile, role: Exclude<AppRole, "AUTHOR">, checked: boolean) {
+    const currentRoles = rolesFor(person);
+    const nextRoles = checked ? [...currentRoles, role] : currentRoles.filter((item) => item !== role);
+    setUpdatingUserId(person.id); setMessage("");
+    const { error } = await getSupabaseClient().rpc("set_user_roles", { target_user_id: person.id, new_roles: nextRoles });
+    if (error) setMessage(error.message); else { setMessage(`${person.full_name || person.email}님의 역할을 저장했습니다.`); await onChanged(); }
+    setUpdatingUserId(null);
+  }
   async function changeActivation(person: Profile, makeActive: boolean) { const { error } = await getSupabaseClient().rpc("set_user_activation", { target_user_id: person.id, make_active: makeActive, change_note: makeActive ? "관리자 회원가입 승인" : "관리자 계정 이용중지" }); if (error) setMessage(error.message); else { setMessage(makeActive ? "회원가입을 승인했습니다." : "계정 이용을 중지했습니다."); await onChanged(); } }
   const orderedProfiles = [...profiles].sort((a, b) => Number(a.is_active) - Number(b.is_active) || b.created_at.localeCompare(a.created_at));
-  return <section className="workspace-card"><div className="card-heading"><div><p>MEMBER APPROVAL &amp; ROLE</p><h2>가입 승인·권한 관리</h2></div><span>승인대기 {profiles.filter((person) => !person.is_active).length}명</span></div>{message && <div className="notice-box">{message}</div>}<div className="data-table-wrap"><table className="data-table member-table"><thead><tr><th>사용자</th><th>소속</th><th>가입상태</th><th>현재 역할</th><th>가입일</th><th>관리</th></tr></thead><tbody>{orderedProfiles.map((person) => <tr key={person.id}><td><b>{person.full_name || "이름 미입력"}</b><small>{person.email}</small></td><td>{person.affiliation ?? "—"}</td><td><span className={`member-status ${person.is_active ? "approved" : "pending"}`}>{person.is_active ? "승인완료" : "승인대기"}</span></td><td><select value={person.role} disabled={!person.is_active} onChange={(event) => void changeRole(person.id, event.target.value as AppRole)}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td>{formatDate(person.created_at)}</td><td>{!person.is_active ? <button className="primary-small" type="button" onClick={() => void changeActivation(person, true)}>가입 승인</button> : person.id !== currentUserId ? <button className="secondary-small" type="button" onClick={() => void changeActivation(person, false)}>이용중지</button> : <span className="muted-text">현재 관리자</span>}</td></tr>)}</tbody></table></div></section>;
+  return <section className="workspace-card"><div className="card-heading"><div><p>MEMBER APPROVAL &amp; MULTIPLE ROLES</p><h2>가입 승인·중복 역할 관리</h2></div><span>승인대기 {profiles.filter((person) => !person.is_active).length}명</span></div>{message && <div className="notice-box">{message}</div>}<div className="data-table-wrap"><table className="data-table member-table"><thead><tr><th>사용자</th><th>소속</th><th>가입상태</th><th>역할 중복 부여</th><th>가입일</th><th>관리</th></tr></thead><tbody>{orderedProfiles.map((person) => {
+    const assignedRoles = rolesFor(person);
+    const updating = updatingUserId === person.id;
+    return <tr key={person.id}><td><b>{person.full_name || "이름 미입력"}</b><small>{person.email}</small></td><td>{person.affiliation ?? "—"}</td><td><span className={`member-status ${person.is_active ? "approved" : "pending"}`}>{person.is_active ? "승인완료" : "승인대기"}</span></td><td><div className="role-checkboxes"><label><input type="checkbox" checked readOnly disabled />투고자</label>{(["REVIEWER", "EDITOR", "ADMIN"] as const).map((role) => <label key={role}><input type="checkbox" checked={assignedRoles.includes(role)} disabled={updating || (person.id === currentUserId && role === "ADMIN")} onChange={(event) => void toggleRole(person, role, event.target.checked)} />{ROLE_LABELS[role]}</label>)}</div></td><td>{formatDate(person.created_at)}</td><td>{!person.is_active ? <button className="primary-small" type="button" disabled={updating} onClick={() => void changeActivation(person, true)}>선택 역할로 가입 승인</button> : person.id !== currentUserId ? <button className="secondary-small" type="button" disabled={updating} onClick={() => void changeActivation(person, false)}>이용중지</button> : <span className="muted-text">현재 관리자</span>}</td></tr>;
+  })}</tbody></table></div></section>;
 }
 
 function IssueManagement({ issues, onChanged }: { issues: Issue[]; onChanged: () => Promise<void> }) {

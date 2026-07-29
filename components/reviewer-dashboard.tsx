@@ -27,6 +27,26 @@ type ReviewerManuscript = {
 };
 
 type ReviewerFile = { file_id: string; bucket_id: string; storage_path: string; file_kind: string; version_no: number; mime_type: string; size_bytes: number; created_at: string };
+const MIN_AUTHOR_COMMENT_ITEMS = 10;
+
+function emptyAuthorComments() {
+  return Array.from({ length: MIN_AUTHOR_COMMENT_ITEMS }, () => "");
+}
+
+function parseAuthorComments(value: string | null) {
+  if (!value?.trim()) return emptyAuthorComments();
+  const matches = [...value.matchAll(/(?:^|\n)\s*\d+\.\s*([\s\S]*?)(?=\n\s*\d+\.\s|$)/g)];
+  const parsed = matches.length ? matches.map((match) => match[1].trim()) : [value.trim()];
+  return [...parsed, ...Array.from({ length: Math.max(0, MIN_AUTHOR_COMMENT_ITEMS - parsed.length) }, () => "")];
+}
+
+function serializeAuthorComments(comments: string[]) {
+  return comments
+    .map((comment) => comment.trim())
+    .filter(Boolean)
+    .map((comment, index) => `${index + 1}. ${comment}`)
+    .join("\n\n");
+}
 
 export function ReviewerDashboard({ profile }: { profile: Profile }) {
   const [items, setItems] = useState<ReviewerManuscript[]>([]);
@@ -97,7 +117,7 @@ function assignmentLabel(status: ReviewerManuscript["assignment_status"]) {
 
 function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; onClose: () => void; onComplete: () => Promise<void> }) {
   const [files, setFiles] = useState<ReviewerFile[]>([]);
-  const [draft, setDraft] = useState({ recommendation: item.recommendation ?? "RE_REVIEW" as ReviewRecommendation, authorComments: "", editorComments: "" });
+  const [draft, setDraft] = useState({ recommendation: item.recommendation ?? "RE_REVIEW" as ReviewRecommendation, authorComments: emptyAuthorComments(), editorComments: "" });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -110,7 +130,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
       setFiles((fileResult.data ?? []) as ReviewerFile[]);
       if (reviewResult.data) setDraft({
         recommendation: reviewResult.data.recommendation ?? "RE_REVIEW",
-        authorComments: reviewResult.data.author_comments,
+        authorComments: parseAuthorComments(reviewResult.data.author_comments),
         editorComments: reviewResult.data.editor_comments,
       });
     });
@@ -124,19 +144,21 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
   async function save(submit: boolean, attachment?: File) {
     setBusy(true); setMessage("");
     try {
+      const authorComments = serializeAuthorComments(draft.authorComments);
+      if (submit && !authorComments) throw new Error("저자 공개용 심사의견을 1개 이상 작성해 주세요.");
       if (attachment?.size) await uploadJournalFile(attachment, item.manuscript_id, "REVIEW_ATTACHMENT", item.round_no);
       const supabase = getSupabaseClient();
       const { error } = submit
         ? await supabase.rpc("submit_review", {
           target_assignment_id: item.assignment_id,
           final_recommendation: draft.recommendation,
-          final_author_comments: draft.authorComments,
+          final_author_comments: authorComments,
           final_editor_comments: draft.editorComments,
         })
         : await supabase.rpc("save_review_draft", {
           target_assignment_id: item.assignment_id,
           draft_recommendation: draft.recommendation,
-          draft_author_comments: draft.authorComments,
+          draft_author_comments: authorComments,
           draft_editor_comments: draft.editorComments,
         });
       if (error) throw error;
@@ -153,6 +175,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
   }
 
   const readOnly = item.assignment_status === "COMPLETED";
+  const displayedAuthorComments = readOnly ? draft.authorComments.filter((comment) => comment.trim()) : draft.authorComments;
   return <div className="modal-backdrop modal-scroll"><section className="review-modal" role="dialog" aria-modal="true"><button className="modal-close" type="button" onClick={onClose}>×</button>
     <p className="panel-eyebrow">DOUBLE-BLIND REVIEW · ROUND {item.round_no}</p><h2>{item.manuscript_code}</h2><h3>{item.title_ko}</h3><p className="english-title">{item.title_en}</p>
     <div className="blind-notice"><b>이중맹검 보호</b><span>이 화면에는 저자 이름, 이메일, 소속이 제공되지 않습니다.</span></div>
@@ -160,7 +183,10 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
     <div className="file-list"><h4>익명 원고</h4>{files.length ? files.map((file) => <button type="button" key={file.file_id} onClick={() => void openFile(file)}><span>{file.file_kind === "REVISION" ? `${file.version_no}차 수정원고` : "최초 익명원고"}</span><small>{(file.size_bytes / 1024 / 1024).toFixed(1)}MB · 60초 보안링크</small><b>열람 ↗</b></button>) : <p>열람 가능한 익명 원고가 없습니다.</p>}</div>
     <form className="stack-form review-form" onSubmit={handleSubmit}>
       <label>심사판정<select value={draft.recommendation} disabled={readOnly} onChange={(event) => setDraft({ ...draft, recommendation: event.target.value as ReviewRecommendation })}>{Object.entries(RECOMMENDATION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label>저자 공개용 심사의견<textarea rows={8} value={draft.authorComments} readOnly={readOnly} required onChange={(event) => setDraft({ ...draft, authorComments: event.target.value })} placeholder="저자가 수정에 활용할 수 있도록 구체적으로 작성해 주세요." /></label>
+      <fieldset className="numbered-review-comments"><legend>저자 공개용 심사의견</legend><div className="numbered-review-heading"><p>항목별로 나누어 작성하면 투고자가 수정사항을 명확히 확인할 수 있습니다.</p>{!readOnly && <span>10개 기본 제공 · 필요 시 추가 가능</span>}</div>
+        <div className="numbered-review-list">{displayedAuthorComments.map((comment, index) => <label className="numbered-review-item" key={index}><span>{index + 1}</span><textarea rows={3} value={comment} readOnly={readOnly} onChange={(event) => setDraft((current) => ({ ...current, authorComments: current.authorComments.map((value, itemIndex) => itemIndex === index ? event.target.value : value) }))} placeholder={`${index + 1}번 심사의견을 입력해 주세요.`} />{!readOnly && index >= MIN_AUTHOR_COMMENT_ITEMS && <button type="button" aria-label={`${index + 1}번 심사의견 삭제`} onClick={() => setDraft((current) => ({ ...current, authorComments: current.authorComments.filter((_, itemIndex) => itemIndex !== index) }))}>삭제</button>}</label>)}</div>
+        {!readOnly && <button className="add-review-comment" type="button" onClick={() => setDraft((current) => ({ ...current, authorComments: [...current.authorComments, ""] }))}>+ 심사의견 항목 추가</button>}
+      </fieldset>
       <label>편집위원 전용 의견<textarea rows={5} value={draft.editorComments} readOnly={readOnly} onChange={(event) => setDraft({ ...draft, editorComments: event.target.value })} placeholder="저자에게 공개되지 않는 의견입니다." /></label>
       {!readOnly && <label>심사의견서 파일(선택)<input name="attachment" type="file" accept=".pdf,.doc,.docx,.txt" /></label>}
       {!readOnly && <div className="form-actions"><button className="secondary-button" type="button" disabled={busy} onClick={() => void save(false)}>임시저장</button><button className="button button-primary" disabled={busy}>{busy ? "처리 중…" : "심사결과 제출"}</button></div>}{message && <p className="form-message">{message}</p>}

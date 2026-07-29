@@ -461,6 +461,42 @@ export type Database = {
           },
         ]
       }
+      profile_roles: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          profile_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_role_history: {
         Row: {
           changed_at: string
@@ -892,6 +928,14 @@ export type Database = {
           title_ko: string
         }[]
       }
+      get_my_roles: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_app_role: {
+        Args: { required_role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       is_assigned_reviewer: {
         Args: { target_manuscript_id: string }
@@ -1003,6 +1047,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_user_roles: {
+        Args: {
+          new_roles: Database["public"]["Enums"]["app_role"][]
+          target_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["app_role"][]
       }
       set_user_activation: {
         Args: {
