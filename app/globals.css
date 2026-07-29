@@ -2422,21 +2422,6 @@ footer button { color: inherit; }
 .ethics-notice { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--orange); background: #fff6ed; }
 .ethics-notice strong { display: block; color: #9d4c0b; font-size: 12px; }
 .ethics-notice p { margin: 7px 0 0; color: #725a47; font-size: 10px; line-height: 1.75; }
-.authorship-choice { display: grid; margin: 28px 0 0; padding: 0; grid-template-columns: repeat(2, 1fr); gap: 12px; border: 0; }
-.authorship-choice legend { width: 100%; margin-bottom: 12px; color: var(--ink); font-size: 12px; font-weight: 900; }
-.authorship-choice button { display: grid; min-height: 120px; padding: 22px; align-content: center; gap: 7px; border: 1px solid #c9d2da; text-align: left; }
-.authorship-choice button > span { color: var(--forest-2); font-size: 9px; font-weight: 900; }
-.authorship-choice button > strong { font-size: 18px; }
-.authorship-choice button > small { color: var(--muted); font-size: 9px; }
-.authorship-choice button.active { border: 2px solid var(--forest-2); background: #f0f8f7; box-shadow: inset 0 0 0 3px white; }
-.ethics-author-signatures { display: grid; margin-top: 24px; padding: 22px; gap: 12px; border: 1px solid var(--line); background: #f8fafb; }
-.ethics-author-signatures > div strong { font-size: 13px; }
-.ethics-author-signatures > div p { margin: 5px 0 0; color: var(--muted); font-size: 9px; }
-.ethics-author-signatures > label { display: grid; grid-template-columns: 90px minmax(0, 1fr) 52px; align-items: center; gap: 10px; }
-.ethics-author-signatures > label > span { color: #43515f; font-size: 10px; font-weight: 850; }
-.ethics-author-signatures input { min-height: 44px; padding: 0 13px; border: 1px solid #bfc9d2; background: white; color: var(--ink); }
-.ethics-author-signatures label > button { min-height: 38px; color: #9b3d35; font-size: 9px; font-weight: 850; text-decoration: underline; }
-.ethics-author-signatures .add-ethics-author { min-height: 44px; border-style: dashed; color: var(--forest-2); }
 .ethics-checklist { display: grid; margin-top: 24px; border-top: 1px solid var(--line); }
 .ethics-checklist > label { display: grid; min-height: 82px; padding: 18px 12px; grid-template-columns: 22px 1fr; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .ethics-checklist input, .corresponding-choice input, .final-consent input { width: 17px; height: 17px; accent-color: var(--forest-2); }
@@ -2459,14 +2444,23 @@ footer button { color: inherit; }
 .wizard-message { padding: 15px 18px; border-left: 4px solid var(--forest-2); background: #e9f5f2; color: #245d50; font-size: 11px; line-height: 1.65; }
 .wizard-message.error { border-color: #b4483e; background: #fae7e4; color: #81352e; }
 .author-editor-list { display: grid; padding-top: 24px; gap: 16px; }
+.author-composition-toolbar { display: grid; grid-template-columns: 1.15fr repeat(3, 1fr); border-top: 2px solid var(--ink); border-left: 1px solid var(--line); background: #f8fafb; }
+.author-composition-toolbar > label, .author-composition-toolbar > div { display: grid; min-height: 86px; padding: 15px 18px; align-content: center; gap: 7px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.author-composition-toolbar span { color: var(--muted); font-size: 9px; font-weight: 850; }
+.author-composition-toolbar strong { font-size: 14px; }
+.author-composition-toolbar select { min-height: 42px; padding: 0 12px; border: 1px solid #b9c5ce; background: white; color: var(--ink); font-size: 11px; font-weight: 800; }
 .author-editor-card { border: 1px solid var(--line); }
 .author-editor-card > header { display: flex; min-height: 58px; padding: 12px 18px; align-items: center; justify-content: space-between; background: #eef3f6; }
 .author-editor-card > header > div { display: flex; align-items: center; gap: 12px; }
 .author-editor-card > header span { color: var(--forest-2); font-size: 9px; font-weight: 900; }
 .author-editor-card > header strong { font-size: 13px; }
+.author-editor-card > header small { padding: 5px 8px; background: white; color: var(--muted); font-size: 8px; font-weight: 800; }
 .author-editor-card > header button { color: #9b3d35; font-size: 9px; font-weight: 800; text-decoration: underline; }
 .author-editor-card .wizard-form { padding: 20px; }
+.author-role-choices { display: grid; grid-template-columns: repeat(2, 1fr); border-bottom: 1px solid var(--line); }
 .corresponding-choice { display: flex; min-height: 68px; padding: 14px 20px; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.author-role-choices .corresponding-choice { border-right: 1px solid var(--line); border-bottom: 0; }
+.author-role-choices .corresponding-choice:last-child { border-right: 0; }
 .corresponding-choice > span { color: var(--muted); font-size: 9px; line-height: 1.55; }
 .corresponding-choice strong { display: block; color: var(--ink); font-size: 11px; }
 .author-editor-list > .add-author { justify-self: stretch; border-style: dashed; color: var(--forest-2); }
@@ -2559,11 +2553,13 @@ footer button { color: inherit; }
   .new-submission-header { min-height: 200px; padding: 32px 24px; }
   .manuscript-progress { overflow-x: auto; grid-template-columns: repeat(4, minmax(125px, 1fr)); }
   .wizard-panel { padding: 26px 18px 30px; }
-  .authorship-choice, .wizard-form, .submission-review { grid-template-columns: 1fr; }
+  .wizard-form, .submission-review { grid-template-columns: 1fr; }
+  .author-composition-toolbar { grid-template-columns: 1fr; }
+  .author-role-choices { grid-template-columns: 1fr; }
+  .author-role-choices .corresponding-choice { border-right: 0; border-bottom: 1px solid var(--line); }
+  .author-role-choices .corresponding-choice:last-child { border-bottom: 0; }
   .ethics-policy-card > header { align-items: flex-start; flex-direction: column; }
   .ethics-policy-card pre { max-height: 480px; padding: 20px 17px; font-size: 10px; }
-  .ethics-author-signatures > label { grid-template-columns: 1fr 44px; }
-  .ethics-author-signatures > label > span { grid-column: 1 / -1; }
   .wizard-form label.wide, .wizard-form .wide, .submission-review > div.wide { grid-column: auto; }
   .wizard-actions { align-items: stretch; flex-direction: column-reverse; }
   .wizard-actions .button, .wizard-actions .secondary-button, .wizard-actions .draft-save-button { width: 100%; }

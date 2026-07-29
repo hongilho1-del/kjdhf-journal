@@ -117,12 +117,16 @@ test("new submissions use a full-page ethics-first authoring wizard", async () =
     readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
   ]);
-  for (const label of ["연구윤리서약", "논문·초록 입력", "저자정보", "원고파일", "단독저자", "공동저자", "교신저자로 지정"]) {
+  for (const label of ["연구윤리 동의", "저자구성·교신저자", "논문·초록 입력", "원고파일", "단독저자", "공동저자", "제1저자", "교신저자로 지정"]) {
     assert.match(submission, new RegExp(label));
   }
   assert.match(submission, /RESEARCH_PUBLICATION_ETHICS_POLICY/);
   assert.match(submission, /ethics_author_names/);
-  assert.match(submission, /저자 전원 연구·출판윤리규정 동의/);
+  assert.match(submission, /연구·출판윤리규정에 동의합니다/);
+  assert.match(submission, /AUTHOR_COUNT_OPTIONS/);
+  assert.match(submission, /length: 10/);
+  assert.ok(submission.indexOf("STEP 01") < submission.indexOf("STEP 02"));
+  assert.ok(submission.indexOf("저자 구성 및 교신저자 지정") < submission.indexOf("STEP 03"));
   assert.match(submission, /is_corresponding: index === correspondingIndex/);
   assert.match(submission, /#online-submission\?mode=new&step=ethics/);
   assert.match(submission, /persistDraft/);
