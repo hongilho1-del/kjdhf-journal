@@ -362,9 +362,10 @@ test("one account can receive multiple role workspaces without losing author acc
 });
 
 test("administrators can inspect every workspace and bypass only wizard navigation validation", async () => {
-  const [app, submission] = await Promise.all([
+  const [app, submission, journal] = await Promise.all([
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal.ts", import.meta.url), "utf8"),
   ]);
   assert.match(app, /isAdministrator\s*\?\s*ROLE_ORDER/);
   assert.match(app, /adminTestMode=\{roles\.includes\("ADMIN"\)\}/);
@@ -376,6 +377,7 @@ test("administrators can inspect every workspace and bypass only wizard navigati
   assert.match(submission, /화면 점검 완료 · My Page/);
   assert.match(submission, /if \(!ethicsComplete\) return showValidationError/);
   assert.match(submission, /원고파일과 익명화 원고를 모두 선택/);
+  assert.match(journal, /timeZone:\s*"Asia\/Seoul"/);
 });
 
 test("authors can withdraw a submitted manuscript without deleting its audit record", async () => {
