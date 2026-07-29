@@ -20,9 +20,10 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
   assert.match(html, /한국 디지털 건강체력학회지/);
-  assert.match(html, /건강체력 연구가/);
+  assert.match(html, /건강과 체력의 미래/);
+  assert.match(html, /최신발행학술지/);
   assert.match(html, /이중맹검 심사/);
-  assert.match(html, /논문투고·심사 시작/);
+  assert.match(html, /온라인 투고·심사 시작/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {
