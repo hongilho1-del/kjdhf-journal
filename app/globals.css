@@ -2409,6 +2409,11 @@ footer button { color: inherit; }
 .new-submission-header small, .wizard-heading small, .wizard-complete > small { color: #79d5fb; font-size: 9px; font-weight: 900; letter-spacing: .18em; }
 .new-submission-header h1 { margin: 12px 0 8px; font-size: clamp(34px, 4vw, 50px); letter-spacing: -.06em; }
 .new-submission-header p { margin: 0; color: rgba(255,255,255,.64); font-size: 12px; }
+.admin-test-mode { display: grid; min-height: 78px; padding: 17px 21px; grid-template-columns: minmax(190px, .34fr) 1fr; align-items: center; gap: 22px; border: 1px solid #d38a1f; border-left: 5px solid var(--orange); background: #fff7e9; color: #6d4a17; }
+.admin-test-mode > div { display: grid; gap: 5px; }
+.admin-test-mode small { color: #b76508; font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.admin-test-mode strong { color: var(--ink); font-size: 14px; }
+.admin-test-mode p { margin: 0; font-size: 10px; line-height: 1.7; }
 .manuscript-progress { display: grid; margin: 0; padding: 0; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); background: white; list-style: none; }
 .manuscript-progress li { position: relative; display: grid; min-height: 76px; padding: 17px 20px; align-content: center; gap: 6px; border-right: 1px solid var(--line); color: #9aa4ad; }
 .manuscript-progress li:last-child { border-right: 0; }
@@ -2459,6 +2464,7 @@ footer button { color: inherit; }
 .wizard-actions .button { min-width: 210px; min-height: 48px; justify-content: space-between; font-size: 10px; }
 .wizard-actions .secondary-button { min-width: 105px; }
 .draft-save-button { min-width: 105px; min-height: 48px; padding: 0 17px; border: 1px solid var(--forest-2); background: white; color: var(--forest-2); font-size: 10px; font-weight: 900; }
+.admin-test-finish-button { min-height: 48px; padding: 0 17px; border: 1px solid #d38a1f; background: #fff7e9; color: #9b5508; font-size: 10px; font-weight: 900; }
 .wizard-actions button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .wizard-message { padding: 15px 18px; border-left: 4px solid var(--forest-2); background: #e9f5f2; color: #245d50; font-size: 11px; line-height: 1.65; }
 .wizard-message.error { border-color: #b4483e; background: #fae7e4; color: #81352e; }

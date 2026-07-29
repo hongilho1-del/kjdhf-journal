@@ -42,7 +42,7 @@ const TAB_COPY: Record<SubmissionTab, { title: string; description: string }> = 
   status: { title: "내논문심사현황", description: "투고 논문의 현재 상태와 공개된 심사결과를 확인합니다." },
 };
 
-export function ManuscriptSubmissionPage({ profile, onMyPage }: { profile: Profile; onMyPage: () => void }) {
+export function ManuscriptSubmissionPage({ profile, adminTestMode = false, onMyPage }: { profile: Profile; adminTestMode?: boolean; onMyPage: () => void }) {
   const [tab, setTab] = useState<SubmissionTab>("new");
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +81,7 @@ export function ManuscriptSubmissionPage({ profile, onMyPage }: { profile: Profi
 
   if (profile.role !== "AUTHOR") return <div className="submission-access-card"><small>ONLINE SUBMISSION</small><h2>투고자 전용 메뉴입니다.</h2><p>현재 계정은 {profile.role === "REVIEWER" ? "심사위원" : "편집 업무"} 권한으로 로그인되어 있습니다. 역할별 업무는 My Page에서 이용해 주세요.</p><button className="button button-primary" type="button" onClick={onMyPage}>My Page로 이동</button></div>;
 
-  if (showNewSubmission) return <NewSubmissionWizard profile={profile} initialDraftId={draftIdFromHash()} onCancel={closeNewSubmission} onMyPage={onMyPage} onComplete={loadManuscripts} />;
+  if (showNewSubmission) return <NewSubmissionWizard profile={profile} adminTestMode={adminTestMode} initialDraftId={draftIdFromHash()} onCancel={closeNewSubmission} onMyPage={onMyPage} onComplete={loadManuscripts} />;
 
   return <div className="submission-center">
     <section className="submission-center-hero"><div><small>ONLINE MANUSCRIPT SUBMISSION</small><h1>온라인 논문 투고</h1><p>한국디지털건강체력연구 논문 제출과 진행상태를 관리합니다.</p></div><button type="button" onClick={onMyPage}>My Page <span>→</span></button></section>
@@ -106,7 +106,7 @@ export function ManuscriptSubmissionPage({ profile, onMyPage }: { profile: Profi
   </div>;
 }
 
-function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onComplete }: { profile: Profile; initialDraftId: string | null; onCancel: () => void; onMyPage: () => void; onComplete: () => Promise<void> }) {
+function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel, onMyPage, onComplete }: { profile: Profile; adminTestMode: boolean; initialDraftId: string | null; onCancel: () => void; onMyPage: () => void; onComplete: () => Promise<void> }) {
   const [step, setStep] = useState<WizardStep>(1);
   const [ethicsAgreed, setEthicsAgreed] = useState(false);
   const [ethicsAgreedAt, setEthicsAgreedAt] = useState<string | null>(null);
@@ -315,15 +315,19 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
 
   function continueFromPaper(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const error = validatePaperLanguage();
-    if (error) return showValidationError(error);
+    if (!adminTestMode) {
+      const error = validatePaperLanguage();
+      if (error) return showValidationError(error);
+    }
     goToStep(4);
   }
 
   function continueFromAuthors(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const error = validateAuthorLanguage();
-    if (error) return showValidationError(error);
+    if (!adminTestMode) {
+      const error = validateAuthorLanguage();
+      if (error) return showValidationError(error);
+    }
     goToStep(3);
   }
 
@@ -377,6 +381,7 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
   return <div className="new-submission-page">
     <div className="new-submission-top"><button type="button" onClick={onCancel}>← 온라인 논문 투고로 돌아가기</button><span>{draftId ? "임시저장 원고를 작성 중입니다." : "각 단계의 임시저장 버튼으로 나중에 이어서 작성할 수 있습니다."}</span></div>
     <header className="new-submission-header"><small>NEW MANUSCRIPT SUBMISSION</small><h1>신규 논문 투고</h1><p>연구윤리 확인부터 원고 제출까지 순서대로 진행해 주세요.</p></header>
+    {adminTestMode && <aside className="admin-test-mode" role="status"><div><small>ADMIN TEST MODE</small><strong>관리자 운영 테스트 모드</strong></div><p>필수 내용을 입력하지 않아도 각 단계 화면을 확인할 수 있습니다. 실제 논문 투고 완료에는 모든 필수정보와 원고파일이 필요합니다.</p></aside>}
     <ol className="manuscript-progress" aria-label="신규 논문 투고 단계">
       {STEP_LABELS.map((label, index) => <li className={step === index + 1 ? "active" : step > index + 1 ? "done" : ""} key={label}><span>{String(index + 1).padStart(2, "0")}</span><strong>{label}</strong></li>)}
     </ol>
@@ -395,14 +400,14 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
           <label><span>총 연구자 수</span><select value={authors.length} onChange={(event) => setEthicsAuthorCount(Number(event.target.value))}>{AUTHOR_COUNT_OPTIONS.map((count) => <option value={count} key={count}>{count}명</option>)}</select></label>
         </header>
         <div className="ethics-author-name-grid">
-          {authors.map((author, index) => <label key={index}><span>{authors.length === 1 ? "단독저자" : `제${index + 1}저자`} 이름</span><input value={author.nameKo} onChange={(event) => updateEthicsAuthorName(index, event.target.value)} placeholder="한글 성명 입력" required /></label>)}
+          {authors.map((author, index) => <label key={index}><span>{authors.length === 1 ? "단독저자" : `제${index + 1}저자`} 이름</span><input value={author.nameKo} onChange={(event) => updateEthicsAuthorName(index, event.target.value)} placeholder="한글 성명 입력" required={!adminTestMode} /></label>)}
         </div>
         <p className="ethics-author-help">입력한 이름은 다음 단계의 저자 구성에 그대로 반영됩니다. 이름이나 인원수를 변경하면 서약 동의를 다시 확인해야 합니다.</p>
       </section>
       <div className="ethics-checklist ethics-final-agreement">
         <label><input type="checkbox" checked={ethicsAgreed} disabled={!ethicsAuthorNamesComplete} onChange={(event) => setEthicsAgreement(event.target.checked)} /><span><strong>위에 이름을 작성한 연구자 전원이 연구·출판윤리규정에 동의합니다.</strong>투고 책임자는 규정 전문을 확인했으며, 입력한 모든 연구자에게 규정을 안내하고 동의를 받았음을 확인합니다.</span></label>
       </div>
-      <div className="wizard-actions"><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(false)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" type="button" disabled={!ethicsComplete || busy} onClick={() => goToStep(2)}>동의하고 저자 구성 입력 <span>→</span></button></div>
+      <div className="wizard-actions"><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(false)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" type="button" disabled={busy || (!adminTestMode && !ethicsComplete)} onClick={() => goToStep(2)}>{adminTestMode && !ethicsComplete ? "화면 점검 계속" : "동의하고 저자 구성 입력"} <span>→</span></button></div>
     </section>}
 
     {step === 2 && <section className="wizard-panel">
@@ -421,11 +426,11 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
             <label className="corresponding-choice"><input type="radio" name="correspondingAuthor" checked={correspondingIndex === index} disabled={authorship === "SOLE"} onChange={() => setCorrespondingIndex(index)} /><span><strong>{authorship === "SOLE" ? "단독저자·교신저자" : "교신저자로 지정"}</strong>{authorship === "SOLE" ? "단독저자는 교신저자로 자동 지정됩니다." : "편집위원회와 연락하고 논문을 최종 확인할 저자입니다."}</span></label>
           </div>
           <div className="wizard-form">
-            <label>이름(국문)<input value={author.nameKo} onChange={(event) => updateAuthor(index, "nameKo", event.target.value)} required /></label>
+            <label>이름(국문)<input value={author.nameKo} onChange={(event) => updateAuthor(index, "nameKo", event.target.value)} required={!adminTestMode} /></label>
             <label>이름(영문)<input value={author.nameEn} onChange={(event) => updateAuthor(index, "nameEn", event.target.value)} /></label>
-            <label>소속(국문)<input value={author.affiliationKo} onChange={(event) => updateAuthor(index, "affiliationKo", event.target.value)} required /></label>
+            <label>소속(국문)<input value={author.affiliationKo} onChange={(event) => updateAuthor(index, "affiliationKo", event.target.value)} required={!adminTestMode} /></label>
             <label>소속(영문)<input value={author.affiliationEn} onChange={(event) => updateAuthor(index, "affiliationEn", event.target.value)} /></label>
-            <label className="wide">이메일<input type="email" value={author.email} onChange={(event) => updateAuthor(index, "email", event.target.value)} required /></label>
+            <label className="wide">이메일<input type="email" value={author.email} onChange={(event) => updateAuthor(index, "email", event.target.value)} required={!adminTestMode} /></label>
           </div>
         </article>)}
         <div className="wizard-actions"><button className="secondary-button" type="button" onClick={() => goToStep(1)}>← 이전</button><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>논문·초록 입력 <span>→</span></button></div>
@@ -435,13 +440,13 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
     {step === 3 && <section className="wizard-panel">
       <div className="wizard-heading"><small>STEP 03</small><h2>논문 및 초록 입력</h2><p>심사와 색인에 사용될 국·영문 정보를 정확하게 입력해 주세요.</p></div>
       <form className="wizard-form" onSubmit={continueFromPaper}>
-        <label className="wide">논문제목(국문)<input value={paper.titleKo} onChange={(event) => updatePaper("titleKo", event.target.value)} required /></label>
-        <label className="wide">논문제목(영문)<input value={paper.titleEn} onChange={(event) => updatePaper("titleEn", event.target.value)} required /></label>
-        <label className="wide">국문초록<textarea rows={7} value={paper.abstractKo} onChange={(event) => updatePaper("abstractKo", event.target.value)} required /></label>
-        <label className="wide">영문초록<textarea rows={7} value={paper.abstractEn} onChange={(event) => updatePaper("abstractEn", event.target.value)} required /></label>
-        <label>국문 핵심어<input value={paper.keywordsKo} onChange={(event) => updatePaper("keywordsKo", event.target.value)} placeholder="쉼표로 구분" required /></label>
-        <label>영문 Keywords<input value={paper.keywordsEn} onChange={(event) => updatePaper("keywordsEn", event.target.value)} placeholder="Comma separated" required /></label>
-        <label className="wide">연구분야<select value={paper.researchField} onChange={(event) => updatePaper("researchField", event.target.value)} required><option value="" disabled>선택해 주세요</option><option>디지털 헬스</option><option>건강체력 측정·평가</option><option>운동생리학</option><option>운동처방·재활</option><option>학교·지역사회 건강</option><option>기타</option></select></label>
+        <label className="wide">논문제목(국문)<input value={paper.titleKo} onChange={(event) => updatePaper("titleKo", event.target.value)} required={!adminTestMode} /></label>
+        <label className="wide">논문제목(영문)<input value={paper.titleEn} onChange={(event) => updatePaper("titleEn", event.target.value)} required={!adminTestMode} /></label>
+        <label className="wide">국문초록<textarea rows={7} value={paper.abstractKo} onChange={(event) => updatePaper("abstractKo", event.target.value)} required={!adminTestMode} /></label>
+        <label className="wide">영문초록<textarea rows={7} value={paper.abstractEn} onChange={(event) => updatePaper("abstractEn", event.target.value)} required={!adminTestMode} /></label>
+        <label>국문 핵심어<input value={paper.keywordsKo} onChange={(event) => updatePaper("keywordsKo", event.target.value)} placeholder="쉼표로 구분" required={!adminTestMode} /></label>
+        <label>영문 Keywords<input value={paper.keywordsEn} onChange={(event) => updatePaper("keywordsEn", event.target.value)} placeholder="Comma separated" required={!adminTestMode} /></label>
+        <label className="wide">연구분야<select value={paper.researchField} onChange={(event) => updatePaper("researchField", event.target.value)} required={!adminTestMode}><option value="" disabled>선택해 주세요</option><option>디지털 헬스</option><option>건강체력 측정·평가</option><option>운동생리학</option><option>운동처방·재활</option><option>학교·지역사회 건강</option><option>기타</option></select></label>
         <div className="wizard-actions wide"><button className="secondary-button" type="button" onClick={() => goToStep(2)}>← 이전</button><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>원고파일 등록 <span>→</span></button></div>
       </form>
     </section>}
@@ -453,7 +458,7 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
         <label>원고파일<input name="originalFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>저자정보가 포함된 편집용 원고</small></label>
         <label>익명화 원고<input name="anonymizedFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>심사위원에게 제공되는 비식별 원고</small></label>
         <label className="final-consent wide"><input type="checkbox" checked={copyrightAgreed} onChange={(event) => setCopyrightAgreed(event.target.checked)} required /><span>모든 저자를 대표하여 게재 시 저작권 및 이용조건에 동의합니다.</span></label>
-        <div className="wizard-actions wide"><button className="secondary-button" type="button" disabled={busy} onClick={() => goToStep(3)}>← 이전</button><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"} <span>→</span></button></div>
+        <div className="wizard-actions wide"><button className="secondary-button" type="button" disabled={busy} onClick={() => goToStep(3)}>← 이전</button>{adminTestMode && <button className="admin-test-finish-button" type="button" disabled={busy} onClick={onMyPage}>화면 점검 완료 · My Page</button>}<button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"} <span>→</span></button></div>
       </form>
     </section>}
   </div>;
