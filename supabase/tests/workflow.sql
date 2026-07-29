@@ -13,6 +13,7 @@ values
 update public.profiles set role = 'REVIEWER' where id in ('21000000-0000-0000-0000-000000000001', '21000000-0000-0000-0000-000000000002');
 update public.profiles set role = 'EDITOR' where id = '31000000-0000-0000-0000-000000000001';
 update public.profiles set role = 'ADMIN' where id = '41000000-0000-0000-0000-000000000001';
+update public.profiles set is_active = true, approved_at = now();
 
 -- 1~4. 신규 저자 로그인 상태에서 투고정보·저자·원고파일을 등록하고 manuscript ID를 발급한다.
 select set_config('request.jwt.claim.sub', '11000000-0000-0000-0000-000000000001', true);

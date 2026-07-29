@@ -8,6 +8,8 @@ export type Profile = Tables<"profiles">;
 export type Manuscript = Tables<"manuscripts">;
 export type Assignment = Tables<"reviewer_assignments">;
 export type Review = Tables<"reviews">;
+export type BoardPost = Tables<"board_posts">;
+export type BoardCategory = "NOTICE" | "EVENT";
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   AUTHOR: "저자",

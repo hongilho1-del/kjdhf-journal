@@ -14,6 +14,7 @@ values
 update public.profiles set role = 'REVIEWER' where id = '20000000-0000-0000-0000-000000000001';
 update public.profiles set role = 'EDITOR' where id = '30000000-0000-0000-0000-000000000001';
 update public.profiles set role = 'ADMIN' where id = '40000000-0000-0000-0000-000000000001';
+update public.profiles set is_active = true, approved_at = now();
 
 insert into public.manuscripts (
   id, manuscript_code, created_by, status, round_no, title_ko, title_en,

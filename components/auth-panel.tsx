@@ -30,11 +30,8 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
           },
         });
         if (error) throw error;
-        if (!data.session) {
-          setMessage("가입 확인 메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.");
-        } else {
-          onClose();
-        }
+        if (data.session) await supabase.auth.signOut();
+        setMessage("가입 신청이 접수되었습니다. 이메일 인증과 관리자 승인 후 로그인할 수 있습니다.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -52,11 +49,11 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
       <section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button className="modal-close" type="button" onClick={onClose} aria-label="닫기">×</button>
         <p className="panel-eyebrow">KJDHF ACCOUNT</p>
-        <h2 id="auth-title">{mode === "login" ? "시스템 로그인" : "저자 회원가입"}</h2>
+        <h2 id="auth-title">{mode === "login" ? "시스템 로그인" : "저자 회원가입 신청"}</h2>
         <p className="panel-description">
           {mode === "login"
             ? "등록된 계정으로 논문투고·심사 업무를 계속하세요."
-            : "신규 계정은 AUTHOR 권한으로 생성됩니다. 다른 역할은 관리자가 부여합니다."}
+            : "신규 계정은 저자 권한으로 신청되며, 이메일 인증과 관리자의 가입 승인 후 이용할 수 있습니다."}
         </p>
 
         {!isSupabaseConfigured && (
@@ -70,7 +67,7 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
           <label>이메일<input name="email" type="email" autoComplete="email" required /></label>
           <label>비밀번호<input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} /></label>
           <button className="button button-primary form-submit" disabled={busy || !isSupabaseConfigured}>
-            {busy ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}
+            {busy ? "처리 중…" : mode === "login" ? "로그인" : "가입 신청"}
           </button>
         </form>
         {message && <p className="form-message" role="status">{message}</p>}

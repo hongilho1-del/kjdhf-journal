@@ -1,7 +1,12 @@
-const notices = [
-  ["온라인 논문투고·심사 시스템 이용 안내", "2026.07.29"],
-  ["연구윤리 및 이중맹검 심사 원칙 안내", "2026.07.29"],
-  ["한국 디지털 건강체력학회지 창간호 준비 안내", "2026.07.29"],
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { formatDate, type BoardCategory, type BoardPost } from "@/lib/journal";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
+const fallbackNotices: BoardPost[] = [
+  { id: "fallback-system", category: "NOTICE", title: "온라인 논문투고·심사 시스템 이용 안내", content: "저자, 심사위원, 편집위원은 로그인 후 역할별 업무를 이용할 수 있습니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: true, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
+  { id: "fallback-ethics", category: "NOTICE", title: "연구윤리 및 이중맹검 심사 원칙 안내", content: "저자와 심사위원의 신원을 서로 공개하지 않는 이중맹검 심사를 원칙으로 합니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: false, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
 ];
 
 const workflow = [
@@ -12,7 +17,20 @@ const workflow = [
   ["05", "게재 및 발행", "최종원고를 발행호에 배정해 기록합니다."],
 ];
 
-export function PublicHome({ onEnter }: { onEnter: () => void }) {
+export function PublicHome({ onEnter, onOpenBoard }: { onEnter: () => void; onOpenBoard: (category: BoardCategory, postId?: string) => void }) {
+  const [posts, setPosts] = useState<BoardPost[]>(fallbackNotices);
+  const [activeCategory, setActiveCategory] = useState<BoardCategory>("NOTICE");
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    void getSupabaseClient().from("board_posts").select("*").eq("is_published", true).order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(12).then(({ data }) => {
+      if (data) setPosts(data);
+    });
+  }, []);
+
+  const visiblePosts = useMemo(() => posts.filter((post) => post.category === activeCategory).slice(0, 4), [activeCategory, posts]);
+  const featured = visiblePosts[0];
+
   return (
     <>
       <section className="jams-hero" id="journal-home">
@@ -59,19 +77,19 @@ export function PublicHome({ onEnter }: { onEnter: () => void }) {
 
           <aside className="jams-notice" id="journal-notice">
             <div className="jams-notice-tabs">
-              <h2>공지사항</h2><span>학회행사</span><a href="#journal-notice" aria-label="공지사항 더보기">+</a>
+              <button className={activeCategory === "NOTICE" ? "active" : ""} type="button" onClick={() => setActiveCategory("NOTICE")}>공지사항</button><button className={activeCategory === "EVENT" ? "active" : ""} type="button" onClick={() => setActiveCategory("EVENT")}>학회행사</button><button className="jams-more-button" type="button" onClick={() => onOpenBoard(activeCategory)} aria-label={`${activeCategory === "NOTICE" ? "공지사항" : "학회행사"} 더보기`}>+</button>
             </div>
-            <div className="jams-featured-notice">
-              <small>NOTICE</small>
-              <strong>온라인 논문투고·심사 시스템을 운영합니다.</strong>
-              <p>저자, 심사위원, 편집위원은 로그인 후 역할별 업무를 이용할 수 있습니다.</p>
-              <time>2026.07.29</time>
-            </div>
+            {featured ? <><button className="jams-featured-notice" type="button" onClick={() => onOpenBoard(activeCategory, featured.id)}>
+              <small>{activeCategory}</small>
+              <strong>{featured.title}</strong>
+              <p>{featured.content}</p>
+              <time>{formatDate(featured.published_at ?? featured.created_at)}</time>
+            </button>
             <ul>
-              {notices.map(([title, date]) => (
-                <li key={title}><span>{title}</span><time>{date}</time></li>
+              {visiblePosts.slice(1).map((post) => (
+                <li key={post.id}><button type="button" onClick={() => onOpenBoard(activeCategory, post.id)}><span>{post.title}</span><time>{formatDate(post.published_at ?? post.created_at)}</time></button></li>
               ))}
-            </ul>
+            </ul></> : <div className="empty-state"><strong>등록된 {activeCategory === "NOTICE" ? "공지사항" : "학회행사"}이 없습니다.</strong></div>}
           </aside>
         </div>
       </section>

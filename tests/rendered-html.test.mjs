@@ -38,12 +38,13 @@ test("keeps privileged credentials out of frontend source", async () => {
   assert.match(source, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
 });
 
-test("migrations define RLS, audit history, and private storage boundaries", async () => {
-  const [schema, rls, buckets, policies] = await Promise.all([
+test("migrations define RLS, audit history, approval, boards, and private storage boundaries", async () => {
+  const [schema, rls, buckets, policies, community] = await Promise.all([
     readFile(new URL("../supabase/migrations/20260728165759_initial_schema.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165805_rls_and_workflow.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729010000_storage_object_policies.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
   ]);
   for (const table of ["profiles", "manuscripts", "authors", "manuscript_files", "reviewer_assignments", "reviews", "editorial_decisions", "manuscript_status_history", "issues", "published_articles"]) {
     assert.match(schema, new RegExp(`create table public\\.${table}\\b`, "i"));
@@ -53,6 +54,11 @@ test("migrations define RLS, audit history, and private storage boundaries", asy
   assert.doesNotMatch(rls.match(/get_reviewer_manuscripts[\s\S]*?\$\$;/)?.[0] ?? "", /authors|email|affiliation/i);
   for (const bucket of ["manuscripts", "revisions", "review-files", "final-files", "published"]) assert.match(buckets, new RegExp(`'${bucket}'`));
   assert.match(policies, /journal_private_files_select/);
+  assert.match(community, /create table public\.board_posts\b/i);
+  assert.match(community, /alter table public\.board_posts enable row level security/i);
+  assert.match(community, /set_user_activation/);
+  assert.match(community, /profile_approval_history/);
+  assert.match(community, /alter column is_active set default false/i);
 });
 
 test("reviewer UI never queries author identity tables", async () => {

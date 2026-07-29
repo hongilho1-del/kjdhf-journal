@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { BoardManagement } from "@/components/board-management";
 import {
   RECOMMENDATION_LABELS,
   ROLE_LABELS,
@@ -30,7 +31,7 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [selected, setSelected] = useState<Manuscript | null>(null);
-  const [tab, setTab] = useState<"manuscripts" | "users" | "issues">("manuscripts");
+  const [tab, setTab] = useState<"manuscripts" | "users" | "boards" | "issues">("manuscripts");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -71,11 +72,12 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
 
   return <div className="dashboard-stack">
     <section className="dashboard-hero editor-hero"><div><p>{profile.role} DASHBOARD</p><h1>편집업무 통합현황</h1><span>접수, 심사위원 배정, 심사결과와 발행 준비를 관리합니다.</span></div><div className="dashboard-date"><span>오늘</span><strong>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date())}</strong></div></section>
-    <section className="metric-grid admin-metrics"><Metric label="전체 투고" value={stats.all} /><Metric label="신규·형식검토" value={stats.new} tone="alert" /><Metric label="배정 대기" value={stats.assignment} /><Metric label="심사 중" value={stats.reviewing} /><Metric label="수정 중" value={stats.revision} /><Metric label="게재 단계" value={stats.accepted} tone="success" /><Metric label="게재불가" value={stats.rejected} tone="danger" /></section>
-    <nav className="workspace-tabs" aria-label="편집관리 메뉴"><button className={tab === "manuscripts" ? "active" : ""} onClick={() => setTab("manuscripts")}>논문 진행현황</button>{profile.role === "ADMIN" && <><button className={tab === "users" ? "active" : ""} onClick={() => setTab("users")}>사용자·역할관리</button><button className={tab === "issues" ? "active" : ""} onClick={() => setTab("issues")}>발행호 관리</button></>}</nav>
+    <section className="metric-grid admin-metrics"><Metric label="전체 투고" value={stats.all} /><Metric label="신규·형식검토" value={stats.new} tone="alert" /><Metric label="배정 대기" value={stats.assignment} /><Metric label="심사 중" value={stats.reviewing} /><Metric label="수정 중" value={stats.revision} /><Metric label="게재 단계" value={stats.accepted} tone="success" /><Metric label="게재불가" value={stats.rejected} tone="danger" />{profile.role === "ADMIN" && <Metric label="회원 승인대기" value={profiles.filter((person) => !person.is_active).length} tone="alert" />}</section>
+    <nav className="workspace-tabs" aria-label="편집관리 메뉴"><button className={tab === "manuscripts" ? "active" : ""} onClick={() => setTab("manuscripts")}>논문 진행현황</button>{profile.role === "ADMIN" && <><button className={tab === "users" ? "active" : ""} onClick={() => setTab("users")}>가입·권한 관리</button><button className={tab === "boards" ? "active" : ""} onClick={() => setTab("boards")}>공지·행사 관리</button><button className={tab === "issues" ? "active" : ""} onClick={() => setTab("issues")}>발행호 관리</button></>}</nav>
     {message && <div className="notice-box" role="status">{message}</div>}
     {tab === "manuscripts" && <ManuscriptBoard loading={loading} manuscripts={manuscripts} assignments={assignments} profiles={profiles} onSelect={setSelected} />}
-    {tab === "users" && profile.role === "ADMIN" && <UserManagement profiles={profiles} onChanged={loadData} />}
+    {tab === "users" && profile.role === "ADMIN" && <UserManagement profiles={profiles} currentUserId={profile.id} onChanged={loadData} />}
+    {tab === "boards" && profile.role === "ADMIN" && <BoardManagement />}
     {tab === "issues" && profile.role === "ADMIN" && <IssueManagement issues={issues} onChanged={loadData} />}
     {selected && <EditorialDetail manuscript={selected} profiles={profiles} assignments={assignments} reviews={reviews} issues={issues} isAdmin={profile.role === "ADMIN"} onClose={() => setSelected(null)} onChanged={async () => { await loadData(); setSelected((current) => current ? manuscripts.find((item) => item.id === current.id) ?? current : null); }} />}
   </div>;
@@ -148,10 +150,12 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
   </section></div>;
 }
 
-function UserManagement({ profiles, onChanged }: { profiles: Profile[]; onChanged: () => Promise<void> }) {
+function UserManagement({ profiles, currentUserId, onChanged }: { profiles: Profile[]; currentUserId: string; onChanged: () => Promise<void> }) {
   const [message, setMessage] = useState("");
   async function changeRole(userId: string, role: AppRole) { const { error } = await getSupabaseClient().rpc("set_user_role", { target_user_id: userId, new_role: role }); if (error) setMessage(error.message); else { setMessage("역할을 변경했습니다."); await onChanged(); } }
-  return <section className="workspace-card"><div className="card-heading"><div><p>USER &amp; ROLE MANAGEMENT</p><h2>사용자 권한관리</h2></div><span>{profiles.length}명</span></div>{message && <div className="notice-box">{message}</div>}<div className="data-table-wrap"><table className="data-table"><thead><tr><th>사용자</th><th>소속</th><th>현재 역할</th><th>가입일</th></tr></thead><tbody>{profiles.map((person) => <tr key={person.id}><td><b>{person.full_name || "이름 미입력"}</b><small>{person.email}</small></td><td>{person.affiliation ?? "—"}</td><td><select value={person.role} onChange={(event) => void changeRole(person.id, event.target.value as AppRole)}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td>{formatDate(person.created_at)}</td></tr>)}</tbody></table></div></section>;
+  async function changeActivation(person: Profile, makeActive: boolean) { const { error } = await getSupabaseClient().rpc("set_user_activation", { target_user_id: person.id, make_active: makeActive, change_note: makeActive ? "관리자 회원가입 승인" : "관리자 계정 이용중지" }); if (error) setMessage(error.message); else { setMessage(makeActive ? "회원가입을 승인했습니다." : "계정 이용을 중지했습니다."); await onChanged(); } }
+  const orderedProfiles = [...profiles].sort((a, b) => Number(a.is_active) - Number(b.is_active) || b.created_at.localeCompare(a.created_at));
+  return <section className="workspace-card"><div className="card-heading"><div><p>MEMBER APPROVAL &amp; ROLE</p><h2>가입 승인·권한 관리</h2></div><span>승인대기 {profiles.filter((person) => !person.is_active).length}명</span></div>{message && <div className="notice-box">{message}</div>}<div className="data-table-wrap"><table className="data-table member-table"><thead><tr><th>사용자</th><th>소속</th><th>가입상태</th><th>현재 역할</th><th>가입일</th><th>관리</th></tr></thead><tbody>{orderedProfiles.map((person) => <tr key={person.id}><td><b>{person.full_name || "이름 미입력"}</b><small>{person.email}</small></td><td>{person.affiliation ?? "—"}</td><td><span className={`member-status ${person.is_active ? "approved" : "pending"}`}>{person.is_active ? "승인완료" : "승인대기"}</span></td><td><select value={person.role} disabled={!person.is_active} onChange={(event) => void changeRole(person.id, event.target.value as AppRole)}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td>{formatDate(person.created_at)}</td><td>{!person.is_active ? <button className="primary-small" type="button" onClick={() => void changeActivation(person, true)}>가입 승인</button> : person.id !== currentUserId ? <button className="secondary-small" type="button" onClick={() => void changeActivation(person, false)}>이용중지</button> : <span className="muted-text">현재 관리자</span>}</td></tr>)}</tbody></table></div></section>;
 }
 
 function IssueManagement({ issues, onChanged }: { issues: Issue[]; onChanged: () => Promise<void> }) {

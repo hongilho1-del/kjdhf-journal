@@ -74,6 +74,62 @@ export type Database = {
           },
         ]
       }
+      board_posts: {
+        Row: {
+          author_id: string | null
+          category: string
+          content: string
+          created_at: string
+          event_end_at: string | null
+          event_start_at: string | null
+          id: string
+          is_pinned: boolean
+          is_published: boolean
+          location: string | null
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          category: string
+          content: string
+          created_at?: string
+          event_end_at?: string | null
+          event_start_at?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_published?: boolean
+          location?: string | null
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          event_end_at?: string | null
+          event_start_at?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_published?: boolean
+          location?: string | null
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       editorial_decisions: {
         Row: {
           author_letter: string
@@ -411,6 +467,8 @@ export type Database = {
       profiles: {
         Row: {
           affiliation: string | null
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           email: string
           full_name: string
@@ -424,6 +482,8 @@ export type Database = {
         }
         Insert: {
           affiliation?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           email: string
           full_name?: string
@@ -437,6 +497,8 @@ export type Database = {
         }
         Update: {
           affiliation?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -448,7 +510,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       published_articles: {
         Row: {
@@ -867,6 +937,34 @@ export type Database = {
         }
         Returns: {
           affiliation: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          research_fields: string[]
+          reviewer_bio: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_user_activation: {
+        Args: {
+          change_note?: string
+          make_active: boolean
+          target_user_id: string
+        }
+        Returns: {
+          affiliation: string | null
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           email: string
           full_name: string
