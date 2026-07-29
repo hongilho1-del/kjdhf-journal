@@ -55,7 +55,7 @@ export function JournalInformation({
           <nav aria-label="현재 위치">
             <button type="button" onClick={onBackHome}>홈</button>
             <span>›</span>
-            <span>학회지 안내</span>
+            <span>학술지 안내</span>
             <span>›</span>
             <strong>{copy.label}</strong>
           </nav>
@@ -64,7 +64,7 @@ export function JournalInformation({
 
       <div className="shell community-layout journal-information-layout">
         <aside className="community-side-nav journal-information-nav">
-          <h2>학회지 안내</h2>
+          <h2>학술지 안내</h2>
           {journalInformationNavigation.map((item) => (
             <button className={page === item.id ? "active" : ""} type="button" onClick={() => onNavigate(item.id)} key={item.id}>
               {item.label} <span>›</span>

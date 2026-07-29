@@ -187,11 +187,11 @@ export function JournalApp() {
     <main>
       <div className="jams-utility">
         <div className="shell jams-utility-inner">
-          <p>한국 디지털 건강체력학회지</p>
+          <p>한국디지털건강체력연구</p>
           <nav aria-label="사용자 메뉴">
             <a href="https://www.kongju.ac.kr/" target="_blank" rel="noreferrer">국립공주대학교</a>
             <a href={INSTITUTE_URL} target="_blank" rel="noreferrer">건강체력연구소</a>
-            <button type="button" onClick={() => openHomeSection("journal-about")}>학회지 안내</button>
+            <button type="button" onClick={() => openHomeSection("journal-about")}>학술지 안내</button>
             {!session && <button type="button" onClick={() => openAuth()}>로그인</button>}
             {!session && <button type="button" onClick={() => openAuth(false, "signup")}>회원가입</button>}
             {!session && <button className="admin-login-link" type="button" onClick={() => openAuth(true)}>관리자 로그인</button>}
@@ -204,7 +204,7 @@ export function JournalApp() {
       </div>
       <header className="jams-site-header">
         <div className="shell jams-masthead">
-          <button className="brand brand-button jams-brand" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
+          <button className="brand brand-button jams-brand" type="button" onClick={openHome} aria-label="한국디지털건강체력연구 홈">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
             <img className="journal-brand-logo" src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} />
           </button>
@@ -224,23 +224,23 @@ export function JournalApp() {
         <div className="jams-nav-row">
           <div className="shell jams-nav-inner">
             <nav className="jams-primary-nav" aria-label="주요 메뉴">
-              <button type="button" onClick={() => openHomeSection("journal-about")}>학회</button>
+              <button type="button" onClick={() => openHomeSection("journal-about")}>학술지 안내</button>
               <button type="button" onClick={() => openEJournal("search")}>e-Journal</button>
               <button type="button" onClick={openSubmission}>논문투고</button>
-              <button type="button" onClick={() => openInformation("submission-guidelines")}>학회지 안내</button>
+              <button type="button" onClick={() => openInformation("submission-guidelines")}>투고·심사 안내</button>
               <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
-              <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
+              <button type="button" onClick={() => openBoard("EVENT")}>학술대회</button>
               {session && <button className="my-page-nav-link" type="button" onClick={openMyPage}>MY PAGE</button>}
             </nav>
             <details className="jams-mobile-menu">
               <summary aria-label="전체 메뉴"><span /><span /><span /></summary>
               <nav>
-                <button type="button" onClick={() => openHomeSection("journal-about")}>학회</button>
+                <button type="button" onClick={() => openHomeSection("journal-about")}>학술지 안내</button>
                 <button type="button" onClick={() => openEJournal("search")}>e-Journal</button>
                 <button type="button" onClick={openSubmission}>논문투고</button>
-                <button type="button" onClick={() => openInformation("submission-guidelines")}>학회지 안내</button>
+                <button type="button" onClick={() => openInformation("submission-guidelines")}>투고·심사 안내</button>
                 <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
-                <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
+                <button type="button" onClick={() => openBoard("EVENT")}>학술대회</button>
                 {session && <button type="button" onClick={openMyPage}>MY PAGE</button>}
                 {!session && <button type="button" onClick={enterSystem}>온라인 투고·심사</button>}
               </nav>
@@ -258,14 +258,14 @@ export function JournalApp() {
 
       <footer className="jams-footer">
         <div className="shell jams-footer-grid">
-          <button className="brand footer-brand brand-button" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
+          <button className="brand footer-brand brand-button" type="button" onClick={openHome} aria-label="한국디지털건강체력연구 홈">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
             <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} loading="lazy" />
           </button>
           <div className="jams-footer-info">
-            <p>국립공주대학교 건강체력연구소 · 한국 디지털 건강체력학회지 편집국</p>
+            <p>국립공주대학교 건강체력연구소 · 한국디지털건강체력연구 편집국</p>
             <p>논문 투고 및 심사 문의는 편집관리자에게 문의해 주세요.</p>
-            <small>© 2026 KOREAN JOURNAL OF DIGITAL HEALTH &amp; FITNESS. ALL RIGHTS RESERVED.</small>
+            <small>© 2026 KOREAN JOURNAL OF DIGITAL HEALTH &amp; PHYSICAL FITNESS RESEARCH. ALL RIGHTS RESERVED.</small>
           </div>
           <button className="jams-top-button" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>TOP ↑</button>
         </div>

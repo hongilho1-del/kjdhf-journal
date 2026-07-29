@@ -94,7 +94,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
             ? "별도로 발급된 관리자 아이디와 비밀번호를 입력하세요. 계정 이메일은 로그인 화면에 사용하지 않습니다."
             : mode === "login"
             ? "등록된 계정으로 논문투고·심사 업무를 계속하세요."
-            : "한국 디지털 건강체력학회지 온라인 투고·심사 시스템 회원가입을 진행합니다."}
+            : "한국디지털건강체력연구 온라인 투고·심사 시스템 회원가입을 진행합니다."}
         </p>
 
         {!isSupabaseConfigured && (

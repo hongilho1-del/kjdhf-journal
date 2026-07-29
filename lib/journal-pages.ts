@@ -25,7 +25,7 @@ export const journalInformationNavigation = [
     id: "manuscript-template",
     label: "논문 양식 다운로드",
     eyebrow: "MANUSCRIPT TEMPLATE",
-    description: "한국 디지털 건강체력학회지 투고용 논문 양식을 제공하는 페이지입니다.",
+    description: "한국디지털건강체력연구 투고용 논문 양식을 제공하는 페이지입니다.",
   },
 ] as const;
 

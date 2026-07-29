@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatDate, type BoardCategory, type BoardPost } from "@/lib/journal";
+import { formatDate, normalizeBoardPostIdentity, type BoardCategory, type BoardPost } from "@/lib/journal";
 import type { JournalInformationPage } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -27,7 +27,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     void getSupabaseClient().from("board_posts").select("*").eq("is_published", true).not("title", "like", "KJDHF_PAGE:%").order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(12).then(({ data }) => {
-      if (data) setPosts(data);
+      if (data) setPosts(data.map(normalizeBoardPostIdentity));
     });
   }, []);
 
@@ -39,7 +39,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
       <section className="jams-hero" id="journal-home">
         <div className="shell jams-hero-inner">
           <div>
-            <p>KOREAN JOURNAL OF DIGITAL HEALTH &amp; FITNESS</p>
+            <p>KOREAN JOURNAL OF DIGITAL HEALTH &amp; PHYSICAL FITNESS RESEARCH</p>
             <h1>건강과 체력의 미래를<br /><strong>디지털 연구</strong>로 연결합니다.</h1>
             <span>공정한 이중맹검 심사와 투명한 학술 기록을 위한 온라인 시스템</span>
           </div>
@@ -61,9 +61,9 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
               <img className="jams-cover" src={`${assetBasePath}/images/kjdhp-vol01-cover.png`} alt="한국디지털건강체력연구 제1권 제1호 표지" width={1036} height={1519} />
               <div className="jams-journal-info">
                 <span>창간호 준비 중</span>
-                <h3>한국 디지털 건강체력학회지</h3>
+                <h3>한국디지털건강체력연구</h3>
                 <dl>
-                  <div><dt>학술지명</dt><dd>한국 디지털 건강체력학회지</dd></div>
+                  <div><dt>학술지명</dt><dd>한국디지털건강체력연구</dd></div>
                   <div><dt>ISSN</dt><dd>발급 준비 중</dd></div>
                   <div><dt>최신권호</dt><dd>창간호 준비 중</dd></div>
                   <div><dt>발행논문</dt><dd>발행 준비 중</dd></div>
@@ -75,7 +75,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
 
           <aside className="jams-notice" id="journal-notice">
             <div className="jams-notice-tabs">
-              <button className={activeCategory === "NOTICE" ? "active" : ""} type="button" onClick={() => setActiveCategory("NOTICE")}>공지사항</button><button className={activeCategory === "EVENT" ? "active" : ""} type="button" onClick={() => setActiveCategory("EVENT")}>학회행사</button><button className="jams-more-button" type="button" onClick={() => onOpenBoard(activeCategory)} aria-label={`${activeCategory === "NOTICE" ? "공지사항" : "학회행사"} 더보기`}>+</button>
+              <button className={activeCategory === "NOTICE" ? "active" : ""} type="button" onClick={() => setActiveCategory("NOTICE")}>공지사항</button><button className={activeCategory === "EVENT" ? "active" : ""} type="button" onClick={() => setActiveCategory("EVENT")}>학술대회</button><button className="jams-more-button" type="button" onClick={() => onOpenBoard(activeCategory)} aria-label={`${activeCategory === "NOTICE" ? "공지사항" : "학술대회"} 더보기`}>+</button>
             </div>
             {featured ? <><button className="jams-featured-notice" type="button" onClick={() => onOpenBoard(activeCategory, featured.id)}>
               <small>{activeCategory}</small>
@@ -87,7 +87,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
               {visiblePosts.slice(1).map((post) => (
                 <li key={post.id}><button type="button" onClick={() => onOpenBoard(activeCategory, post.id)}><span>{post.title}</span><time>{formatDate(post.published_at ?? post.created_at)}</time></button></li>
               ))}
-            </ul></> : <div className="empty-state"><strong>등록된 {activeCategory === "NOTICE" ? "공지사항" : "학회행사"}이 없습니다.</strong></div>}
+            </ul></> : <div className="empty-state"><strong>등록된 {activeCategory === "NOTICE" ? "공지사항" : "학술대회"}가 없습니다.</strong></div>}
           </aside>
         </div>
       </section>
@@ -114,7 +114,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
         <div className="shell jams-about-grid">
           <div className="jams-about-title">
             <small>ABOUT THE JOURNAL</small>
-            <h2>학회지 안내</h2>
+            <h2>학술지 안내</h2>
             <div className="jams-about-logo">
               {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
               <img src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} loading="lazy" />
@@ -123,7 +123,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
           <div className="jams-about-copy">
             <h3>건강체력 연구의 디지털 전환과<br />신뢰할 수 있는 학술 소통을 지향합니다.</h3>
             <p>
-              한국 디지털 건강체력학회지는 건강, 체력, 운동과학 및 디지털 기술의 융합 연구를 다루며,
+              한국디지털건강체력연구는 건강, 체력, 운동과학 및 디지털 기술의 융합 연구를 다루며,
               연구윤리와 이중맹검 원칙에 따라 투고부터 심사, 판정, 발행까지 모든 과정을 기록합니다.
             </p>
             <div className="jams-about-links" id="journal-policy">

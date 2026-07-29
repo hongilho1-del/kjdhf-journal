@@ -67,7 +67,7 @@ export function EJournalPage({ initialTab = "search", onBackHome }: { initialTab
 
   return <section className="ejournal-page">
     <div className="shell public-page-breadcrumb"><button type="button" onClick={onBackHome}>홈</button><span>›</span><b>e-Journal</b></div>
-    <div className="ejournal-hero"><div className="shell"><small>e-JOURNAL</small><h1>논문 검색 · 학술지</h1><p>한국 디지털 건강체력학회지에서 발행한 논문과 권호를 확인합니다.</p></div></div>
+    <div className="ejournal-hero"><div className="shell"><small>e-JOURNAL</small><h1>논문 검색 · 학술지</h1><p>한국디지털건강체력연구에서 발행한 논문과 권호를 확인합니다.</p></div></div>
     <div className="shell ejournal-shell">
       <nav className="ejournal-tabs" aria-label="e-Journal 메뉴">
         <button className={tab === "search" ? "active" : ""} type="button" onClick={() => changeTab("search")}>논문 검색</button>
@@ -82,7 +82,7 @@ export function EJournalPage({ initialTab = "search", onBackHome }: { initialTab
         <div className="ejournal-result-heading"><h2>논문 검색결과</h2><span>총 {visibleArticles.length}건</span></div>
         {loading ? <div className="empty-state">발행 논문을 불러오는 중입니다.</div> : visibleArticles.length ? <div className="ejournal-articles">
           {visibleArticles.map((article) => <article key={article.id}>
-            <small>{formatDate(article.published_at)} · {article.doi ? `DOI ${article.doi}` : "한국 디지털 건강체력학회지"}</small>
+            <small>{formatDate(article.published_at)} · {article.doi ? `DOI ${article.doi}` : "한국디지털건강체력연구"}</small>
             <h3>{article.title_ko}</h3><p className="article-title-en">{article.title_en}</p>
             <p>{article.abstract_ko}</p>
             <div>{article.keywords_ko.map((keyword) => <span key={keyword}>#{keyword}</span>)}</div>

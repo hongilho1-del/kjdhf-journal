@@ -12,6 +12,17 @@ export type Review = Tables<"reviews">;
 export type BoardPost = Tables<"board_posts">;
 export type BoardCategory = "NOTICE" | "EVENT";
 
+const LEGACY_JOURNAL_NAME = "한국 디지털 건강체력학회지";
+const JOURNAL_NAME = "한국디지털건강체력연구";
+
+export function normalizeBoardPostIdentity(post: BoardPost): BoardPost {
+  return {
+    ...post,
+    title: post.title.replaceAll(LEGACY_JOURNAL_NAME, JOURNAL_NAME),
+    content: post.content.replaceAll(LEGACY_JOURNAL_NAME, JOURNAL_NAME),
+  };
+}
+
 export const ROLE_LABELS: Record<AppRole, string> = {
   AUTHOR: "저자",
   REVIEWER: "심사위원",

@@ -84,7 +84,7 @@ export function ManuscriptSubmissionPage({ profile, onMyPage }: { profile: Profi
   if (showNewSubmission) return <NewSubmissionWizard profile={profile} initialDraftId={draftIdFromHash()} onCancel={closeNewSubmission} onMyPage={onMyPage} onComplete={loadManuscripts} />;
 
   return <div className="submission-center">
-    <section className="submission-center-hero"><div><small>ONLINE MANUSCRIPT SUBMISSION</small><h1>온라인 논문 투고</h1><p>한국 디지털 건강체력학회지 논문 제출과 진행상태를 관리합니다.</p></div><button type="button" onClick={onMyPage}>My Page <span>→</span></button></section>
+    <section className="submission-center-hero"><div><small>ONLINE MANUSCRIPT SUBMISSION</small><h1>온라인 논문 투고</h1><p>한국디지털건강체력연구 논문 제출과 진행상태를 관리합니다.</p></div><button type="button" onClick={onMyPage}>My Page <span>→</span></button></section>
     <nav className="submission-center-tabs" aria-label="논문 제출 메뉴">
       {(Object.keys(TAB_COPY) as SubmissionTab[]).map((id) => <button className={tab === id ? "active" : ""} type="button" onClick={() => setTab(id)} key={id}><strong>{TAB_COPY[id].title}</strong><span>→</span></button>)}
     </nav>

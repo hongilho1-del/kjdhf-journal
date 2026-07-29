@@ -19,7 +19,7 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
-  assert.match(html, /한국 디지털 건강체력학회지/);
+  assert.match(html, /한국디지털건강체력연구/);
   assert.match(html, /건강과 체력의 미래/);
   assert.match(html, /최신발행학술지/);
   assert.match(html, /이중맹검 심사/);
@@ -197,7 +197,7 @@ test("admin can edit review-information pages without exposing them as notices",
     readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
   ]);
-  assert.match(editor, /profile\.role === "ADMIN"[^\n]+학회지 안내 관리/);
+  assert.match(editor, /profile\.role === "ADMIN"[^\n]+학술지 안내 관리/);
   assert.match(editor, /<JournalPageManagement profile=\{profile\}/);
   assert.match(management, /from\("board_posts"\).*update/s);
   assert.match(management, /from\("board_posts"\).*insert/s);
@@ -210,22 +210,37 @@ test("admin can edit review-information pages without exposing them as notices",
 });
 
 test("public boards avoid admin function errors and journal information uses one label", async () => {
-  const [community, app, home, information, management, policy] = await Promise.all([
+  const [community, app, home, information, management, boardManagement, journal, policy, identityMigration] = await Promise.all([
     readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/board-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal.ts", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729200000_fix_public_board_read_policy.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729203000_journal_identity_wording.sql", import.meta.url), "utf8"),
   ]);
   assert.doesNotMatch(community, /permission denied|notice-box/);
-  assert.match(app, /학회지 안내/);
-  assert.match(home, /학회지 안내/);
-  assert.match(information, /학회지 안내/);
-  assert.match(management, /학회지 안내 페이지/);
+  assert.match(app, /학술지 안내/);
+  assert.match(app, /투고·심사 안내/);
+  assert.match(app, /학술대회/);
+  assert.match(home, /학술지 안내/);
+  assert.match(home, /한국디지털건강체력연구는 건강, 체력, 운동과학/);
+  assert.match(community, /학술대회/);
+  assert.match(boardManagement, /공지·학술대회 관리/);
+  assert.match(information, /학술지 안내/);
+  assert.match(management, /학술지 안내 페이지/);
+  for (const source of [community, app, home, information, management, boardManagement]) {
+    assert.doesNotMatch(source, /학회행사|학회지|>학회</);
+    assert.doesNotMatch(source, /한국 디지털 건강체력학회지/);
+  }
   assert.match(policy, /using \(is_published\)/);
   assert.match(policy, /board_posts_admin_read/);
   assert.doesNotMatch(policy.match(/board_posts_public_read[\s\S]*?;/)?.[0] ?? "", /is_admin/);
+  assert.match(identityMigration, /replace\([\s\S]*한국 디지털 건강체력학회지[\s\S]*한국디지털건강체력연구/);
+  assert.match(journal, /normalizeBoardPostIdentity/);
+  assert.match(home + community + boardManagement, /map\(normalizeBoardPostIdentity\)/);
 });
 
 test("admins can attach a public manuscript template and the journal page downloads it", async () => {
