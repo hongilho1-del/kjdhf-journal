@@ -70,9 +70,10 @@ test("authenticated users get a My Page with personal manuscript management", as
 });
 
 test("signup follows four JAMS-style steps and keeps new members pending approval", async () => {
-  const [panel, migration] = await Promise.all([
+  const [panel, migration, consentMigration] = await Promise.all([
     readFile(new URL("../components/auth-panel.tsx", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729162000_signup_profile_metadata.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729190000_ethics_and_privacy_consents.sql", import.meta.url), "utf8"),
   ]);
   for (const label of ["회원선택", "약관동의", "회원정보입력", "가입완료"]) assert.match(panel, new RegExp(label));
   for (const field of ["fullName", "affiliation", "email", "passwordConfirm", "phone", "researchFields"]) assert.match(panel, new RegExp(`name="${field}"`));
@@ -81,6 +82,11 @@ test("signup follows four JAMS-style steps and keeps new members pending approva
   assert.match(migration, /research_fields/);
   assert.match(migration, /'AUTHOR'/);
   assert.match(migration, /false/);
+  for (const consent of ["서비스 이용약관", "개인정보 수집 및 이용", "개인정보 국외이전", "학술정보 이메일 수신"]) assert.match(panel, new RegExp(consent));
+  assert.match(panel, /requiredAgreementsComplete/);
+  assert.match(panel, /consent_academic_email/);
+  assert.match(consentMigration, /create table public\.user_consents/);
+  assert.match(consentMigration, /policy_version/);
   assert.doesNotMatch(panel, /service[_-]?role/i);
 });
 
@@ -114,7 +120,9 @@ test("new submissions use a full-page ethics-first authoring wizard", async () =
   for (const label of ["연구윤리서약", "논문·초록 입력", "저자정보", "원고파일", "단독저자", "공동저자", "교신저자로 지정"]) {
     assert.match(submission, new RegExp(label));
   }
-  assert.match(submission, /Object\.values\(ethics\)\.every\(Boolean\)/);
+  assert.match(submission, /RESEARCH_PUBLICATION_ETHICS_POLICY/);
+  assert.match(submission, /ethics_author_names/);
+  assert.match(submission, /저자 전원 연구·출판윤리규정 동의/);
   assert.match(submission, /is_corresponding: index === correspondingIndex/);
   assert.match(submission, /#online-submission\?mode=new&step=ethics/);
   assert.match(submission, /persistDraft/);

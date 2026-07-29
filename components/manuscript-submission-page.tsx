@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { FileSubmissionModal, openAuthorReviewResult } from "@/components/author-dashboard";
 import { STATUS_LABELS, formatDate, getErrorMessage, splitKeywords, type Manuscript, type Profile } from "@/lib/journal";
+import { ETHICS_POLICY_VERSION, RESEARCH_PUBLICATION_ETHICS_POLICY } from "@/lib/policies";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { uploadJournalFile } from "@/lib/supabase/files";
 
@@ -107,7 +108,8 @@ export function ManuscriptSubmissionPage({ profile, onMyPage }: { profile: Profi
 function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onComplete }: { profile: Profile; initialDraftId: string | null; onCancel: () => void; onMyPage: () => void; onComplete: () => Promise<void> }) {
   const [step, setStep] = useState<WizardStep>(1);
   const [authorship, setAuthorship] = useState<AuthorshipType>("SOLE");
-  const [ethics, setEthics] = useState({ authorship: false, integrity: false, originality: false, conflict: false });
+  const [ethicsAgreed, setEthicsAgreed] = useState(false);
+  const [ethicsAgreedAt, setEthicsAgreedAt] = useState<string | null>(null);
   const [paper, setPaper] = useState<PaperDraft>(EMPTY_PAPER);
   const [authors, setAuthors] = useState<DraftAuthor[]>([{ ...EMPTY_AUTHOR, nameKo: profile.full_name, affiliationKo: profile.affiliation ?? "", email: profile.email }]);
   const [correspondingIndex, setCorrespondingIndex] = useState(0);
@@ -118,7 +120,9 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
   const [completedCode, setCompletedCode] = useState("");
-  const ethicsComplete = Object.values(ethics).every(Boolean);
+  const ethicsComplete = ethicsAgreed
+    && authors.every((author) => author.nameKo.trim().length >= 2)
+    && (authorship === "SOLE" ? authors.length === 1 : authors.length >= 2);
 
   useEffect(() => {
     if (!initialDraftId) return;
@@ -147,19 +151,26 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
         keywordsEn: manuscript.keywords_en.join(", "),
         researchField: manuscript.research_field,
       });
-      setEthics({
-        authorship: manuscript.ethics_confirmed,
-        integrity: manuscript.ethics_confirmed,
-        originality: manuscript.ethics_confirmed,
-        conflict: manuscript.conflict_of_interest_confirmed,
-      });
+      const savedEthicsNames = manuscript.ethics_author_names ?? [];
+      const hasCurrentEthicsAgreement = manuscript.ethics_confirmed
+        && manuscript.ethics_policy_version === ETHICS_POLICY_VERSION
+        && Boolean(manuscript.ethics_agreed_at)
+        && savedEthicsNames.length > 0;
+      setEthicsAgreed(hasCurrentEthicsAgreement);
+      setEthicsAgreedAt(hasCurrentEthicsAgreement ? manuscript.ethics_agreed_at : null);
       setCopyrightAgreed(manuscript.copyright_agreed);
       if (authorResult.data?.length) {
         setAuthors(authorResult.data.map((author) => ({ nameKo: author.name_ko, nameEn: author.name_en ?? "", affiliationKo: author.affiliation_ko, affiliationEn: author.affiliation_en ?? "", email: author.email })));
         setAuthorship(authorResult.data.length > 1 ? "COAUTHORED" : "SOLE");
         setCorrespondingIndex(Math.max(0, authorResult.data.findIndex((author) => author.is_corresponding)));
-        setStep(3);
-      } else if (manuscript.title_ko || manuscript.title_en) {
+        setStep(hasCurrentEthicsAgreement ? 3 : 1);
+      } else if (savedEthicsNames.length) {
+        setAuthors(savedEthicsNames.map((name, index) => index === 0
+          ? { ...EMPTY_AUTHOR, nameKo: name, affiliationKo: profile.affiliation ?? "", email: profile.email }
+          : { ...EMPTY_AUTHOR, nameKo: name }));
+        setAuthorship(savedEthicsNames.length > 1 ? "COAUTHORED" : "SOLE");
+        setStep(hasCurrentEthicsAgreement && (manuscript.title_ko || manuscript.title_en) ? 2 : 1);
+      } else if (hasCurrentEthicsAgreement && (manuscript.title_ko || manuscript.title_en)) {
         setStep(2);
       }
       setMessage("임시저장한 내용을 불러왔습니다.");
@@ -168,7 +179,7 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
     }
     void loadDraft();
     return () => { active = false; };
-  }, [initialDraftId]);
+  }, [initialDraftId, profile.affiliation, profile.email]);
 
   function goToStep(next: WizardStep) {
     setMessage("");
@@ -182,6 +193,8 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
   function selectAuthorship(next: AuthorshipType) {
     setAuthorship(next);
     setCorrespondingIndex(0);
+    setEthicsAgreed(false);
+    setEthicsAgreedAt(null);
     setAuthors((current) => next === "SOLE" ? [current[0]] : current.length > 1 ? current : [current[0], { ...EMPTY_AUTHOR }]);
   }
 
@@ -193,7 +206,26 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
     setAuthors((current) => current.map((author, authorIndex) => authorIndex === index ? { ...author, [key]: value } : author));
   }
 
+  function updateEthicsAuthorName(index: number, value: string) {
+    setEthicsAgreed(false);
+    setEthicsAgreedAt(null);
+    updateAuthor(index, "nameKo", value);
+  }
+
+  function addEthicsAuthor() {
+    setEthicsAgreed(false);
+    setEthicsAgreedAt(null);
+    setAuthors((current) => [...current, { ...EMPTY_AUTHOR }]);
+  }
+
+  function setEthicsAgreement(checked: boolean) {
+    setEthicsAgreed(checked);
+    setEthicsAgreedAt(checked ? new Date().toISOString() : null);
+  }
+
   function removeAuthor(index: number) {
+    setEthicsAgreed(false);
+    setEthicsAgreedAt(null);
     setAuthors((current) => current.filter((_, authorIndex) => authorIndex !== index));
     setCorrespondingIndex((current) => current === index ? 0 : current > index ? current - 1 : current);
   }
@@ -237,7 +269,10 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
       keywords_en: splitKeywords(paper.keywordsEn),
       research_field: paper.researchField,
       ethics_confirmed: ethicsComplete,
-      conflict_of_interest_confirmed: ethics.conflict,
+      conflict_of_interest_confirmed: ethicsComplete,
+      ethics_policy_version: ethicsComplete ? ETHICS_POLICY_VERSION : null,
+      ethics_agreed_at: ethicsComplete ? (ethicsAgreedAt ?? new Date().toISOString()) : null,
+      ethics_author_names: authors.map((author) => author.nameKo.trim()).filter(Boolean),
       copyright_agreed: copyrightAgreed,
     };
     let manuscriptId = draftId;
@@ -303,6 +338,7 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
 
   async function handleFinalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!ethicsComplete) return showValidationError("연구·출판윤리규정에 동의한 뒤 제출해 주세요.");
     const languageError = validatePaperLanguage() || validateAuthorLanguage();
     if (languageError) return showValidationError(languageError);
     const values = new FormData(event.currentTarget);
@@ -356,19 +392,25 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
     {message && <div className={`wizard-message ${messageIsError ? "error" : ""}`} role="status">{message}</div>}
 
     {step === 1 && <section className="wizard-panel">
-      <div className="wizard-heading"><small>STEP 01</small><h2>연구윤리 및 저자 동의</h2><p>투고 책임자는 모든 저자에게 아래 내용을 공유하고 동의를 받은 후 진행해야 합니다.</p></div>
-      <div className="ethics-notice"><strong>투고 전 확인</strong><p>본 확인은 단순한 안내가 아니라 모든 저자를 대표한 공식 서약입니다. 사실과 다른 확인으로 발생하는 책임은 투고자와 저자에게 있습니다.</p></div>
+      <div className="wizard-heading"><small>STEP 01</small><h2>연구·출판윤리규정 확인</h2><p>아래 규정 전문을 모든 저자가 함께 확인한 뒤 저자 전원의 성명을 입력하고 동의해 주세요.</p></div>
+      <article className="ethics-policy-card" aria-labelledby="ethics-policy-title">
+        <header><div><small>RESEARCH &amp; PUBLICATION ETHICS</small><h3 id="ethics-policy-title">연구·출판윤리규정</h3></div><span>시행 2026. 8. 1.</span></header>
+        <pre tabIndex={0}>{RESEARCH_PUBLICATION_ETHICS_POLICY}</pre>
+      </article>
+      <div className="ethics-notice"><strong>투고 책임자 확인</strong><p>투고 책임자는 아래에 기재한 모든 저자에게 규정 전문을 공유하고 동의를 받아야 합니다. 동의한 저자 성명과 동의 시각은 논문 기록에 보존됩니다.</p></div>
       <fieldset className="authorship-choice"><legend>저자 구성 선택</legend>
         <button className={authorship === "SOLE" ? "active" : ""} type="button" onClick={() => selectAuthorship("SOLE")}><span>01</span><strong>단독저자</strong><small>투고자 1인이 단독으로 작성한 논문</small></button>
         <button className={authorship === "COAUTHORED" ? "active" : ""} type="button" onClick={() => selectAuthorship("COAUTHORED")}><span>02</span><strong>공동저자</strong><small>2인 이상의 저자가 함께 작성한 논문</small></button>
       </fieldset>
-      <div className="ethics-checklist">
-        <label><input type="checkbox" checked={ethics.authorship} onChange={(event) => setEthics((current) => ({ ...current, authorship: event.target.checked }))} /><span><strong>저자 자격 및 저자표시 동의</strong>모든 저자가 연구에 실질적으로 참여했으며 저자 순서와 교신저자 지정에 동의했습니다.</span></label>
-        <label><input type="checkbox" checked={ethics.integrity} onChange={(event) => setEthics((current) => ({ ...current, integrity: event.target.checked }))} /><span><strong>연구 진실성 확인</strong>위조·변조·표절 및 부당한 저자표시가 없으며 연구윤리 규정을 준수했습니다.</span></label>
-        <label><input type="checkbox" checked={ethics.originality} onChange={(event) => setEthics((current) => ({ ...current, originality: event.target.checked }))} /><span><strong>중복·동시투고 금지 확인</strong>본 논문은 다른 학술지에 게재되었거나 현재 심사 중인 논문이 아닙니다.</span></label>
-        <label><input type="checkbox" checked={ethics.conflict} onChange={(event) => setEthics((current) => ({ ...current, conflict: event.target.checked }))} /><span><strong>이해상충 공개 확인</strong>연구와 관련된 재정적·개인적 이해상충을 모든 저자가 확인하고 필요한 내용을 공개했습니다.</span></label>
+      <section className="ethics-author-signatures">
+        <div><strong>동의한 저자 전원</strong><p>논문에 표시할 순서대로 모든 저자의 성명을 입력하세요.</p></div>
+        {authors.map((author, index) => <label key={index}><span>{index === 0 ? "투고자" : `공동저자 ${index}`}</span><input value={author.nameKo} onChange={(event) => updateEthicsAuthorName(index, event.target.value)} placeholder="저자 성명" required minLength={2} />{authorship === "COAUTHORED" && index > 0 && <button type="button" onClick={() => removeAuthor(index)}>삭제</button>}</label>)}
+        {authorship === "COAUTHORED" && <button className="secondary-button add-ethics-author" type="button" onClick={addEthicsAuthor}>＋ 공동저자 추가</button>}
+      </section>
+      <div className="ethics-checklist ethics-final-agreement">
+        <label><input type="checkbox" checked={ethicsAgreed} onChange={(event) => setEthicsAgreement(event.target.checked)} /><span><strong>저자 전원 연구·출판윤리규정 동의</strong>위에 입력한 모든 저자가 연구·출판윤리규정 전문을 확인했으며, 투고 책임자가 저자 전원을 대표하여 동의합니다.</span></label>
       </div>
-      <div className="wizard-actions"><button className="draft-save-button" type="button" disabled={!ethicsComplete || busy} onClick={() => void saveDraft(false)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" type="button" disabled={!ethicsComplete || busy} onClick={() => goToStep(2)}>동의하고 논문정보 입력 <span>→</span></button></div>
+      <div className="wizard-actions"><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(false)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" type="button" disabled={!ethicsComplete || busy} onClick={() => goToStep(2)}>동의하고 초록 작성 <span>→</span></button></div>
     </section>}
 
     {step === 2 && <section className="wizard-panel">
@@ -389,17 +431,17 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
       <div className="wizard-heading"><small>STEP 03</small><h2>{authorship === "SOLE" ? "단독저자 및 교신저자 확인" : "공동저자 및 교신저자 지정"}</h2><p>{authorship === "SOLE" ? "단독저자는 투고자 본인이 교신저자로 자동 지정됩니다." : "저자를 논문 표기 순서대로 입력하고 교신저자 1명을 선택해 주세요."}</p></div>
       <form className="author-editor-list" onSubmit={continueFromAuthors}>
         {authors.map((author, index) => <article className="author-editor-card" key={index}>
-          <header><div><span>{String(index + 1).padStart(2, "0")}</span><strong>{index === 0 ? "투고자" : `공동저자 ${index}`}</strong></div>{authorship === "COAUTHORED" && index > 0 && <button type="button" onClick={() => removeAuthor(index)}>저자 삭제</button>}</header>
+          <header><div><span>{String(index + 1).padStart(2, "0")}</span><strong>{index === 0 ? "투고자" : `공동저자 ${index}`}</strong></div></header>
           <label className="corresponding-choice"><input type="radio" name="correspondingAuthor" checked={correspondingIndex === index} onChange={() => setCorrespondingIndex(index)} /><span><strong>교신저자로 지정</strong>편집위원회와 연락하고 논문을 최종 확인할 저자입니다.</span></label>
           <div className="wizard-form">
-            <label>이름(국문)<input value={author.nameKo} onChange={(event) => updateAuthor(index, "nameKo", event.target.value)} required /></label>
+            <label>이름(국문)<input value={author.nameKo} readOnly aria-readonly="true" required /><small>연구윤리 동의 저자명과 동일하게 고정됩니다.</small></label>
             <label>이름(영문)<input value={author.nameEn} onChange={(event) => updateAuthor(index, "nameEn", event.target.value)} /></label>
             <label>소속(국문)<input value={author.affiliationKo} onChange={(event) => updateAuthor(index, "affiliationKo", event.target.value)} required /></label>
             <label>소속(영문)<input value={author.affiliationEn} onChange={(event) => updateAuthor(index, "affiliationEn", event.target.value)} /></label>
             <label className="wide">이메일<input type="email" value={author.email} onChange={(event) => updateAuthor(index, "email", event.target.value)} required /></label>
           </div>
         </article>)}
-        {authorship === "COAUTHORED" && <button className="secondary-button add-author" type="button" onClick={() => setAuthors((current) => [...current, { ...EMPTY_AUTHOR }])}>＋ 공동저자 추가</button>}
+        <button className="secondary-button add-author" type="button" onClick={() => goToStep(1)}>저자 구성·성명 변경은 1단계에서 하기</button>
         <div className="wizard-actions"><button className="secondary-button" type="button" onClick={() => goToStep(2)}>← 이전</button><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>원고파일 등록 <span>→</span></button></div>
       </form>
     </section>}

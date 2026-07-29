@@ -1624,6 +1624,8 @@ button:focus-visible {
 .agreement-box > label { display: flex; padding: 12px 16px; align-items: center; gap: 9px; border-top: 1px solid var(--line); font-size: 9px; font-weight: 800; }
 .agreement-age span { display: grid; gap: 4px; }
 .agreement-age small { color: var(--muted); font-size: 8px; font-weight: 500; }
+.agreement-legal-note { margin: 0; padding: 13px 16px; background: #f2f6f9; color: #5c6874; font-size: 9px; line-height: 1.7; }
+.agreement-legal-note a { color: var(--forest-2); font-weight: 850; text-decoration: underline; text-underline-offset: 2px; }
 .signup-navigation { display: flex; margin-top: 8px; justify-content: center; gap: 8px; }
 .signup-navigation > button { min-width: 130px; min-height: 46px; padding: 0 18px; border: 1px solid #aeb9c3; font-size: 10px; font-weight: 850; }
 .signup-navigation > button.button-primary { border-color: var(--forest-2); }
@@ -2411,6 +2413,12 @@ footer button { color: inherit; }
 .wizard-heading small { color: var(--forest-2); }
 .wizard-heading h2 { margin: 9px 0 7px; font-size: 28px; letter-spacing: -.05em; }
 .wizard-heading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.ethics-policy-card { margin-top: 26px; border: 1px solid #bfcbd4; background: #fbfcfd; }
+.ethics-policy-card > header { display: flex; min-height: 86px; padding: 19px 22px; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid var(--ink); background: #eef3f6; }
+.ethics-policy-card > header small { color: var(--forest-2); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.ethics-policy-card > header h3 { margin: 6px 0 0; font-size: 21px; letter-spacing: -.035em; }
+.ethics-policy-card > header > span { padding: 8px 11px; background: white; color: #536372; font-size: 9px; font-weight: 850; white-space: nowrap; }
+.ethics-policy-card pre { overflow: auto; width: 100%; max-height: 560px; margin: 0; padding: 28px 30px; color: #334353; font-family: inherit; font-size: 11px; line-height: 1.9; white-space: pre-wrap; word-break: keep-all; }
 .ethics-notice { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--orange); background: #fff6ed; }
 .ethics-notice strong { display: block; color: #9d4c0b; font-size: 12px; }
 .ethics-notice p { margin: 7px 0 0; color: #725a47; font-size: 10px; line-height: 1.75; }
@@ -2421,15 +2429,26 @@ footer button { color: inherit; }
 .authorship-choice button > strong { font-size: 18px; }
 .authorship-choice button > small { color: var(--muted); font-size: 9px; }
 .authorship-choice button.active { border: 2px solid var(--forest-2); background: #f0f8f7; box-shadow: inset 0 0 0 3px white; }
+.ethics-author-signatures { display: grid; margin-top: 24px; padding: 22px; gap: 12px; border: 1px solid var(--line); background: #f8fafb; }
+.ethics-author-signatures > div strong { font-size: 13px; }
+.ethics-author-signatures > div p { margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+.ethics-author-signatures > label { display: grid; grid-template-columns: 90px minmax(0, 1fr) 52px; align-items: center; gap: 10px; }
+.ethics-author-signatures > label > span { color: #43515f; font-size: 10px; font-weight: 850; }
+.ethics-author-signatures input { min-height: 44px; padding: 0 13px; border: 1px solid #bfc9d2; background: white; color: var(--ink); }
+.ethics-author-signatures label > button { min-height: 38px; color: #9b3d35; font-size: 9px; font-weight: 850; text-decoration: underline; }
+.ethics-author-signatures .add-ethics-author { min-height: 44px; border-style: dashed; color: var(--forest-2); }
 .ethics-checklist { display: grid; margin-top: 24px; border-top: 1px solid var(--line); }
 .ethics-checklist > label { display: grid; min-height: 82px; padding: 18px 12px; grid-template-columns: 22px 1fr; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .ethics-checklist input, .corresponding-choice input, .final-consent input { width: 17px; height: 17px; accent-color: var(--forest-2); }
 .ethics-checklist label > span { color: var(--muted); font-size: 10px; line-height: 1.6; }
 .ethics-checklist label strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 12px; }
+.ethics-final-agreement { border: 2px solid var(--forest-2); background: #eef7f5; }
+.ethics-final-agreement > label { border-bottom: 0; }
 .wizard-form { display: grid; padding-top: 28px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .wizard-form label { display: flex; flex-direction: column; gap: 8px; color: #435149; font-size: 10px; font-weight: 850; }
 .wizard-form label.wide, .wizard-form .wide { grid-column: 1 / -1; }
 .wizard-form input:not([type="checkbox"]), .wizard-form select, .wizard-form textarea { width: 100%; min-height: 46px; padding: 11px 13px; border: 1px solid #bdc7cf; background: white; color: var(--ink); font: inherit; font-weight: 500; }
+.wizard-form input[readonly] { background: #eef2f5; color: #53616e; }
 .wizard-form textarea { resize: vertical; line-height: 1.75; }
 .wizard-form label > small { color: var(--muted); font-size: 8px; font-weight: 500; line-height: 1.5; }
 .wizard-actions { display: flex; margin-top: 28px; justify-content: flex-end; gap: 9px; }
@@ -2541,6 +2560,10 @@ footer button { color: inherit; }
   .manuscript-progress { overflow-x: auto; grid-template-columns: repeat(4, minmax(125px, 1fr)); }
   .wizard-panel { padding: 26px 18px 30px; }
   .authorship-choice, .wizard-form, .submission-review { grid-template-columns: 1fr; }
+  .ethics-policy-card > header { align-items: flex-start; flex-direction: column; }
+  .ethics-policy-card pre { max-height: 480px; padding: 20px 17px; font-size: 10px; }
+  .ethics-author-signatures > label { grid-template-columns: 1fr 44px; }
+  .ethics-author-signatures > label > span { grid-column: 1 / -1; }
   .wizard-form label.wide, .wizard-form .wide, .submission-review > div.wide { grid-column: auto; }
   .wizard-actions { align-items: stretch; flex-direction: column-reverse; }
   .wizard-actions .button, .wizard-actions .secondary-button, .wizard-actions .draft-save-button { width: 100%; }

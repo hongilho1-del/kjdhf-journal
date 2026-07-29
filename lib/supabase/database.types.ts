@@ -396,7 +396,10 @@ export type Database = {
           created_at: string
           created_by: string
           current_due_at: string | null
+          ethics_agreed_at: string | null
+          ethics_author_names: string[]
           ethics_confirmed: boolean
+          ethics_policy_version: string | null
           id: string
           keywords_en: string[]
           keywords_ko: string[]
@@ -420,7 +423,10 @@ export type Database = {
           created_at?: string
           created_by?: string
           current_due_at?: string | null
+          ethics_agreed_at?: string | null
+          ethics_author_names?: string[]
           ethics_confirmed?: boolean
+          ethics_policy_version?: string | null
           id?: string
           keywords_en?: string[]
           keywords_ko?: string[]
@@ -444,7 +450,10 @@ export type Database = {
           created_at?: string
           created_by?: string
           current_due_at?: string | null
+          ethics_agreed_at?: string | null
+          ethics_author_names?: string[]
           ethics_confirmed?: boolean
+          ethics_policy_version?: string | null
           id?: string
           keywords_en?: string[]
           keywords_ko?: string[]
@@ -605,6 +614,41 @@ export type Database = {
           {
             foreignKeyName: "profiles_approved_by_fkey"
             columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_consents: {
+        Row: {
+          consent_type: string
+          decided_at: string
+          id: number
+          is_agreed: boolean
+          policy_version: string
+          profile_id: string
+        }
+        Insert: {
+          consent_type: string
+          decided_at?: string
+          id?: never
+          is_agreed: boolean
+          policy_version: string
+          profile_id: string
+        }
+        Update: {
+          consent_type?: string
+          decided_at?: string
+          id?: never
+          is_agreed?: boolean
+          policy_version?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_consents_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

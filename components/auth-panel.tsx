@@ -2,16 +2,19 @@
 
 import { useState, type FormEvent } from "react";
 import { getErrorMessage } from "@/lib/journal";
+import { ACADEMIC_EMAIL_TERMS, OVERSEAS_TRANSFER_TERMS, PRIVACY_COLLECTION_TERMS, SERVICE_TERMS, SIGNUP_POLICY_VERSION } from "@/lib/policies";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }: { onClose: () => void; adminLogin?: boolean; initialMode?: "login" | "signup" }) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [signupStep, setSignupStep] = useState<1 | 2 | 3 | 4>(1);
   const [memberType, setMemberType] = useState<"individual" | null>(null);
-  const [agreements, setAgreements] = useState({ service: false, privacy: false, age: false });
+  const [agreements, setAgreements] = useState({ service: false, privacy: false, overseas: false, academicEmail: false });
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const requiredAgreementsComplete = agreements.service && agreements.privacy && agreements.overseas;
+  const allAgreementsChecked = Object.values(agreements).every(Boolean);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,13 +33,23 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
     try {
       const supabase = getSupabaseClient();
       if (mode === "signup") {
-        if (!Object.values(agreements).every(Boolean)) throw new Error("필수 약관에 모두 동의해 주세요.");
+        if (!requiredAgreementsComplete) throw new Error("필수 약관에 모두 동의해 주세요.");
         if (password !== passwordConfirm) throw new Error("비밀번호 확인이 일치하지 않습니다.");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName, affiliation, phone, research_fields: researchFields },
+            data: {
+              full_name: fullName,
+              affiliation,
+              phone,
+              research_fields: researchFields,
+              consent_policy_version: SIGNUP_POLICY_VERSION,
+              consent_service: agreements.service,
+              consent_privacy: agreements.privacy,
+              consent_overseas: agreements.overseas,
+              consent_academic_email: agreements.academicEmail,
+            },
             emailRedirectTo: window.location.href.split("#")[0],
           },
         });
@@ -99,16 +112,14 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
             <div className="signup-navigation"><button type="button" onClick={() => setMode("login")}>취소</button><button className="button button-primary" type="button" disabled={!memberType} onClick={() => setSignupStep(2)}>다음단계</button></div>
           </section>}
           {signupStep === 2 && <section className="signup-step-panel">
-            <div className="signup-step-heading"><small>STEP 02</small><h3>약관동의</h3><p>필수 약관을 확인하고 동의해 주세요.</p></div>
-            <label className="agreement-all"><input type="checkbox" checked={Object.values(agreements).every(Boolean)} onChange={(event) => setAgreements({ service: event.target.checked, privacy: event.target.checked, age: event.target.checked })} /><span>전체 약관에 동의합니다.</span></label>
-            <AgreementBox title="서비스 이용약관 (필수)" checked={agreements.service} onChange={(checked) => setAgreements((current) => ({ ...current, service: checked }))}>
-              한국 디지털 건강체력학회지 온라인 시스템은 논문 투고, 심사, 편집 및 발행 업무를 제공합니다. 회원은 정확한 정보를 등록하고 타인의 계정을 사용하지 않으며, 연구윤리와 이중맹검 원칙을 준수해야 합니다. 시스템에서 생성된 학술 기록은 학술지 운영과 분쟁 대응을 위해 보존될 수 있습니다.
-            </AgreementBox>
-            <AgreementBox title="개인정보 수집 및 이용 (필수)" checked={agreements.privacy} onChange={(checked) => setAgreements((current) => ({ ...current, privacy: checked }))}>
-              회원 식별과 투고·심사 업무를 위해 이름, 이메일, 소속을 필수로 수집하며 연락처와 연구분야는 선택으로 수집합니다. 개인정보는 회원관리, 업무 알림, 논문 처리에 사용하며 관련 법령과 학술 기록 보존정책에 따라 안전하게 관리합니다. 동의를 거부할 수 있으나 회원가입과 온라인 투고 서비스 이용이 제한됩니다.
-            </AgreementBox>
-            <label className="agreement-age"><input type="checkbox" checked={agreements.age} onChange={(event) => setAgreements((current) => ({ ...current, age: event.target.checked }))} /><span><strong>만 14세 이상입니다. (필수)</strong><small>본 시스템은 만 14세 미만의 회원가입을 받지 않습니다.</small></span></label>
-            <div className="signup-navigation"><button type="button" onClick={() => setSignupStep(1)}>이전단계</button><button className="button button-primary" type="button" disabled={!Object.values(agreements).every(Boolean)} onClick={() => setSignupStep(3)}>다음단계</button></div>
+            <div className="signup-step-heading"><small>STEP 02</small><h3>약관동의</h3><p>필수 동의 3개와 선택 동의 1개를 각각 확인해 주세요.</p></div>
+            <label className="agreement-all"><input type="checkbox" checked={allAgreementsChecked} onChange={(event) => setAgreements({ service: event.target.checked, privacy: event.target.checked, overseas: event.target.checked, academicEmail: event.target.checked })} /><span>필수·선택 약관에 모두 동의합니다.</span></label>
+            <AgreementBox title="서비스 이용약관 및 만 14세 이상 확인 (필수)" checked={agreements.service} onChange={(checked) => setAgreements((current) => ({ ...current, service: checked }))}>{SERVICE_TERMS}</AgreementBox>
+            <AgreementBox title="개인정보 수집 및 이용 (필수)" checked={agreements.privacy} onChange={(checked) => setAgreements((current) => ({ ...current, privacy: checked }))}>{PRIVACY_COLLECTION_TERMS}</AgreementBox>
+            <AgreementBox title="개인정보 국외이전 (필수)" checked={agreements.overseas} onChange={(checked) => setAgreements((current) => ({ ...current, overseas: checked }))}>{OVERSEAS_TRANSFER_TERMS}</AgreementBox>
+            <AgreementBox title="학술정보 이메일 수신 (선택)" checked={agreements.academicEmail} onChange={(checked) => setAgreements((current) => ({ ...current, academicEmail: checked }))}>{ACADEMIC_EMAIL_TERMS}</AgreementBox>
+            <p className="agreement-legal-note">선택 동의는 거부해도 가입할 수 있습니다. <a href="https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029335387" target="_blank" rel="noreferrer">개인정보 보호법 제15조</a> · <a href="https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1006184067" target="_blank" rel="noreferrer">제22조</a> · <a href="https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029334953" target="_blank" rel="noreferrer">제28조의8</a></p>
+            <div className="signup-navigation"><button type="button" onClick={() => setSignupStep(1)}>이전단계</button><button className="button button-primary" type="button" disabled={!requiredAgreementsComplete} onClick={() => setSignupStep(3)}>다음단계</button></div>
           </section>}
           {signupStep === 3 && <form className="signup-information-form" onSubmit={handleSubmit}>
             <div className="signup-step-heading"><small>STEP 03</small><h3>회원정보입력</h3><p><b>*</b> 표시 항목은 필수입니다.</p></div>
