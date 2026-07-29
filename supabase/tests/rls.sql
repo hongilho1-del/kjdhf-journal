@@ -22,8 +22,8 @@ insert into public.manuscripts (
   ethics_confirmed, conflict_of_interest_confirmed, copyright_agreed, submitted_at
 )
 values
-  ('50000000-0000-0000-0000-000000000001', 'KJDHF-2026-901', '10000000-0000-0000-0000-000000000001', 'UNDER_REVIEW', 1, '저자 1 논문', 'Author One Paper', '국문초록', 'English abstract', array['체력'], array['fitness'], '건강체력 측정·평가', true, true, true, now()),
-  ('50000000-0000-0000-0000-000000000002', 'KJDHF-2026-902', '10000000-0000-0000-0000-000000000002', 'SUBMITTED', 1, '저자 2 논문', 'Author Two Paper', '국문초록', 'English abstract', array['운동'], array['exercise'], '운동생리학', true, true, true, now());
+  ('50000000-0000-0000-0000-000000000001', 'KJDHP-2026-901', '10000000-0000-0000-0000-000000000001', 'UNDER_REVIEW', 1, '저자 1 논문', 'Author One Paper', '국문초록', 'English abstract', array['체력'], array['fitness'], '건강체력 측정·평가', true, true, true, now()),
+  ('50000000-0000-0000-0000-000000000002', 'KJDHP-2026-902', '10000000-0000-0000-0000-000000000002', 'SUBMITTED', 1, '저자 2 논문', 'Author Two Paper', '국문초록', 'English abstract', array['운동'], array['exercise'], '운동생리학', true, true, true, now());
 
 insert into public.authors (manuscript_id, user_id, name_ko, affiliation_ko, email, is_corresponding, sort_order)
 values

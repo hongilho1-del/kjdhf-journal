@@ -380,3 +380,17 @@ test("authors can withdraw a submitted manuscript without deleting its audit rec
   assert.doesNotMatch(withdrawalMigration, /delete from public\.manuscripts/i);
   assert.match(journal, /WITHDRAWN: "투고철회"/);
 });
+
+test("new manuscripts receive the KJDHP journal code", async () => {
+  const [migration, workflow, rls, readme] = await Promise.all([
+    readFile(new URL("../supabase/migrations/20260730003000_kjdhp_manuscript_codes.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/tests/workflow.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/tests/rls.sql", import.meta.url), "utf8"),
+    readFile(new URL("../README.md", import.meta.url), "utf8"),
+  ]);
+  assert.match(migration, /generated_code := 'KJDHP-'/);
+  assert.match(migration, /\^KJDHP-\[0-9\]\{4\}-\[0-9\]\{3,\}\$/);
+  assert.match(migration, /set last_number = coalesce/);
+  for (const source of [workflow, rls, readme]) assert.match(source, /KJDHP-/);
+  for (const source of [workflow, rls, readme]) assert.doesNotMatch(source, /KJDHF-/);
+});

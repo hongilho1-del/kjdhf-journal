@@ -30,7 +30,7 @@ values
   ('51000000-0000-0000-0000-000000000001', 'manuscripts', '51000000-0000-0000-0000-000000000001/1/blinded.docx', 'ANONYMIZED', 1, 'blinded.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 1024, true);
 select public.submit_manuscript('51000000-0000-0000-0000-000000000001');
 do $$ begin
-  if not exists (select 1 from public.manuscripts where id = '51000000-0000-0000-0000-000000000001' and manuscript_code ~ '^KJDHF-[0-9]{4}-[0-9]{3,}$' and status = 'SUBMITTED') then
+  if not exists (select 1 from public.manuscripts where id = '51000000-0000-0000-0000-000000000001' and manuscript_code ~ '^KJDHP-[0-9]{4}-[0-9]{3,}$' and status = 'SUBMITTED') then
     raise exception 'Manuscript submission or ID generation failed';
   end if;
 end $$;
