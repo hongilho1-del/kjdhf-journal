@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatDate, normalizeBoardPostIdentity, type BoardCategory, type BoardPost } from "@/lib/journal";
-import type { JournalInformationPage } from "@/lib/journal-pages";
+import { journalInformationNavigation, type JournalInformationPage } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -127,10 +127,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
               연구윤리와 이중맹검 원칙에 따라 투고부터 심사, 판정, 발행까지 모든 과정을 기록합니다.
             </p>
             <div className="jams-about-links" id="journal-policy">
-              <button type="button" onClick={() => onOpenInformation("submission-guidelines")}>논문투고 규정 <span>→</span></button>
-              <button type="button" onClick={() => onOpenInformation("editorial-board")}>편집위원회 <span>→</span></button>
-              <button type="button" onClick={() => onOpenInformation("research-ethics")}>연구 윤리위원회 <span>→</span></button>
-              <button type="button" onClick={() => onOpenInformation("manuscript-template")}>논문 양식 다운로드 <span>→</span></button>
+              {journalInformationNavigation.map((item) => <button type="button" onClick={() => onOpenInformation(item.id)} key={item.id}>{item.label} <span>→</span></button>)}
             </div>
           </div>
         </div>

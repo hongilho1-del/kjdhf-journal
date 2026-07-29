@@ -29,13 +29,14 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /logos\/kjdhp-journal-logo\.png/);
   assert.match(html, /logos\/kjdhp-journal-logo\.png\?v=1/);
   assert.match(html, /images\/kjdhp-vol01-cover\.png/);
-  assert.match(html, /논문투고 규정/);
+  assert.match(html, /논문 투고규정 및 원고작성요령/);
+  assert.match(html, /심사 규정/);
   assert.match(html, /편집위원회/);
   assert.match(html, /연구 윤리위원회/);
   assert.match(html, /논문 양식 다운로드/);
 });
 
-test("journal information links use the supplied logo and open four dedicated views", async () => {
+test("journal information links use the supplied logo and open five dedicated views in author workflow order", async () => {
   const [home, information, pages, app] = await Promise.all([
     readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
@@ -44,10 +45,15 @@ test("journal information links use the supplied logo and open four dedicated vi
   ]);
   assert.match(home, /logos\/kjdhp-journal-logo\.png/);
   assert.doesNotMatch(home, /jams-about-mark/);
-  for (const page of ["submission-guidelines", "editorial-board", "research-ethics", "manuscript-template"]) {
-    assert.match(home, new RegExp(page));
+  const orderedPages = ["submission-guidelines", "review-guidelines", "research-ethics", "editorial-board", "manuscript-template"];
+  for (const page of orderedPages) {
     assert.match(pages, new RegExp(page));
   }
+  for (let index = 1; index < orderedPages.length; index += 1) {
+    assert.ok(pages.indexOf(`id: "${orderedPages[index - 1]}"`) < pages.indexOf(`id: "${orderedPages[index]}"`));
+  }
+  for (const label of ["논문 투고규정 및 원고작성요령", "심사 규정", "연구 윤리위원회", "편집위원회", "논문 양식 다운로드"]) assert.match(pages, new RegExp(label));
+  assert.match(home, /journalInformationNavigation\.map/);
   assert.match(app, /isJournalInformationPage\(hashPage\)/);
   assert.match(app, /<JournalInformation page=\{view\}/);
   assert.match(information, /논문 양식 준비 중/);
@@ -205,6 +211,8 @@ test("admin can edit review-information pages without exposing them as notices",
   assert.match(management, /selectedPage === "submission-guidelines"/);
   assert.match(management, /표 추가 \+/);
   assert.match(management, /buildJournalTableTemplate/);
+  assert.match(management, /savedPageCount/);
+  assert.match(management, /journalInformationNavigation\.length/);
   assert.match(information, /getJournalPageStorageTitle\(page\)/);
   assert.match(information, /<table className="journal-information-table">/);
   assert.match(information, /parseJournalContent/);

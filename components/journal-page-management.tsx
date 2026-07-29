@@ -49,6 +49,7 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
   const definition = getJournalPageDefinition(selectedPage);
   const storageTitle = getJournalPageStorageTitle(selectedPage);
   const savedPage = pages.find((item) => item.title === storageTitle) ?? null;
+  const savedPageCount = journalInformationNavigation.filter((item) => pages.some((page) => page.title === getJournalPageStorageTitle(item.id))).length;
 
   function insertTable() {
     const textarea = contentTextareaRef.current;
@@ -118,7 +119,7 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
   return (
     <div className="journal-page-admin-grid">
       <section className="workspace-card journal-page-admin-list">
-        <div className="card-heading"><div><p>JOURNAL INFORMATION</p><h2>학술지 안내 페이지</h2></div><span>{pages.length} / 4</span></div>
+        <div className="card-heading"><div><p>JOURNAL INFORMATION</p><h2>학술지 안내 페이지</h2></div><span>{savedPageCount} / {journalInformationNavigation.length}</span></div>
         <nav>
           {journalInformationNavigation.map((item) => {
             const saved = pages.find((page) => page.title === getJournalPageStorageTitle(item.id));
