@@ -248,6 +248,7 @@ test("admin username login resolves email only inside the server function", asyn
     readFile(new URL("../supabase/functions/admin-login/index.ts", import.meta.url), "utf8"),
   ]);
   assert.match(panel, /관리자 아이디/);
+  assert.doesNotMatch(panel, /placeholder=["']admin["']/);
   assert.match(panel, /functions\.invoke\(["']admin-login["']/);
   assert.doesNotMatch(panel, /admin_login_aliases/);
   assert.match(loginFunction, /auth\.admin\.getUserById/);

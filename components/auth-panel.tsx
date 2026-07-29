@@ -141,7 +141,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
           </section>}
         </> : <form className="stack-form" onSubmit={handleSubmit}>
           {adminLogin ? (
-            <label>관리자 아이디<input name="username" type="text" autoComplete="username" autoCapitalize="none" pattern="[a-z][a-z0-9._-]{2,31}" minLength={3} maxLength={32} placeholder="admin" required /></label>
+            <label>관리자 아이디<input name="username" type="text" autoComplete="username" autoCapitalize="none" pattern="[a-z][a-z0-9._-]{2,31}" minLength={3} maxLength={32} required /></label>
           ) : (
             <label>이메일<input name="email" type="email" autoComplete="email" required /></label>
           )}
