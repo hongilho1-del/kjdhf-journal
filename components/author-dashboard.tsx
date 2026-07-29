@@ -23,8 +23,9 @@ export function openAuthorReviewResult(manuscriptId: string) {
   window.open(url.toString(), "_blank", "noopener,noreferrer");
 }
 
-export function openNewSubmissionPage() {
-  window.location.hash = "online-submission?mode=new&step=ethics";
+export function openNewSubmissionPage(draftId?: string) {
+  const draftQuery = draftId ? `&draft=${encodeURIComponent(draftId)}` : "";
+  window.location.hash = `online-submission?mode=new&step=ethics${draftQuery}`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -87,7 +88,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
     <div className="dashboard-stack">
       <section className="dashboard-hero">
         <div><p>MY PAGE · AUTHOR</p><h1>{profile.full_name || "저자"}님의 투고현황</h1><span>논문 진행상태와 편집결정을 한눈에 확인하세요.</span></div>
-        <button className="button button-lime" type="button" onClick={openNewSubmissionPage}>신규 논문 투고 <span>＋</span></button>
+        <button className="button button-lime" type="button" onClick={() => openNewSubmissionPage()}>신규 논문 투고 <span>＋</span></button>
       </section>
       <section className="author-role-panel" aria-label="투고자 논문 관리 메뉴">
         <div className="author-role-tab"><span>유형 선택</span><strong>투고자</strong></div>
@@ -117,11 +118,11 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
             {filteredManuscripts.map((manuscript) => (
               <tr key={manuscript.id}>
                 <td><b>{manuscript.manuscript_code ?? "임시저장"}</b></td>
-                <td><button className="table-title" type="button" onClick={() => void openDetail(manuscript)}>{manuscript.title_ko}</button><small>{manuscript.title_en}</small></td>
+                <td><button className="table-title" type="button" onClick={() => void openDetail(manuscript)}>{manuscript.title_ko || "제목 미입력"}</button><small>{manuscript.title_en}</small></td>
                 <td>{formatDate(manuscript.submitted_at ?? manuscript.created_at)}</td>
                 <td><span className={`status-badge status-${manuscript.status.toLowerCase()}`}>{STATUS_LABELS[manuscript.status]}</span></td>
                 <td><div className="table-actions">
-                  {manuscript.status === "DRAFT" && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "draft" })}>파일 추가·제출</button>}
+                  {manuscript.status === "DRAFT" && <button type="button" onClick={() => openNewSubmissionPage(manuscript.id)}>작성 이어가기</button>}
                   {manuscript.status === "REVISION_REQUESTED" && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "revision" })}>수정원고 제출</button>}
                   {["ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(manuscript.status) && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "final" })}>최종원고 제출</button>}
                   {!["DRAFT", "SUBMITTED", "RECEIVED", "FORMAT_REVIEW", "REVIEWER_SELECTION"].includes(manuscript.status) && <button type="button" onClick={() => openAuthorReviewResult(manuscript.id)}>결과</button>}

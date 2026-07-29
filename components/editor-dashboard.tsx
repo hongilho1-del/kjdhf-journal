@@ -25,6 +25,25 @@ type Review = Tables<"reviews"> & { reviewer_assignments: { manuscript_id: strin
 type Author = Tables<"authors">;
 type Issue = Tables<"issues">;
 
+function dateInputAfter(days: number) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function assignmentErrorMessage(message: string) {
+  if (/due date must be in the future/i.test(message)) return "심사기한은 오늘 이후 날짜로 선택해 주세요.";
+  if (/duplicate key|reviewer_assignments_manuscript_id_reviewer_id_round_no/i.test(message)) return "이미 현재 심사차수에 배정된 심사위원입니다.";
+  if (/three active reviewers/i.test(message)) return "현재 심사차수에 심사위원 3명이 모두 배정되었습니다.";
+  if (/active reviewer not found/i.test(message)) return "활성화된 심사위원 계정을 찾을 수 없습니다.";
+  if (/assignment is not allowed in the current status/i.test(message)) return "형식검토를 시작한 후 심사위원을 배정해 주세요.";
+  return message;
+}
+
 export function EditorDashboard({ profile }: { profile: Profile }) {
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -40,7 +59,7 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
     setLoading(true);
     const supabase = getSupabaseClient();
     const [manuscriptResult, profileResult, assignmentResult, reviewResult, issueResult] = await Promise.all([
-      supabase.from("manuscripts").select("*").order("submitted_at", { ascending: false, nullsFirst: false }),
+      supabase.from("manuscripts").select("*").neq("status", "DRAFT").order("submitted_at", { ascending: false, nullsFirst: false }),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("reviewer_assignments").select("*").order("due_at", { ascending: true }),
       supabase.from("reviews").select("*, reviewer_assignments!inner(manuscript_id,reviewer_id,round_no)"),
@@ -105,9 +124,13 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const manuscriptAssignments = assignments.filter((item) => item.manuscript_id === manuscript.id);
-  const currentRoundAssignments = manuscriptAssignments.filter((item) => item.round_no === manuscript.round_no && !["DECLINED", "CANCELLED"].includes(item.status));
+  const targetRound = Math.max(manuscript.round_no, 1);
+  const targetRoundAssignments = manuscriptAssignments.filter((item) => item.round_no === targetRound);
+  const currentRoundAssignments = targetRoundAssignments.filter((item) => !["DECLINED", "CANCELLED"].includes(item.status));
   const manuscriptReviews = reviews.filter((item) => item.reviewer_assignments.manuscript_id === manuscript.id);
-  const reviewers = profiles.filter((item) => item.role === "REVIEWER" && item.is_active);
+  const assignedReviewerIds = new Set(targetRoundAssignments.map((item) => item.reviewer_id));
+  const reviewers = profiles.filter((item) => item.role === "REVIEWER" && item.is_active && !assignedReviewerIds.has(item.id));
+  const assignmentAllowed = (["FORMAT_REVIEW", "REVIEWER_SELECTION", "REVISION_SUBMITTED", "RE_REVIEW"] as ManuscriptStatus[]).includes(manuscript.status);
 
   useEffect(() => { void getSupabaseClient().from("authors").select("*").eq("manuscript_id", manuscript.id).order("sort_order").then(({ data }) => setAuthors(data ?? [])); }, [manuscript.id]);
 
@@ -119,9 +142,17 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
   }
 
   async function assign(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setMessage(""); const form = new FormData(event.currentTarget);
-    const { error } = await getSupabaseClient().rpc("assign_reviewer", { target_manuscript_id: manuscript.id, target_reviewer_id: String(form.get("reviewer")), review_due_at: new Date(String(form.get("dueAt"))).toISOString() });
-    if (error) setMessage(error.message); else { await onChanged(); setMessage("심사위원을 배정했습니다."); event.currentTarget.reset(); }
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const dueAt = String(form.get("dueAt"));
+    if (!dueAt || dueAt < dateInputAfter(1)) {
+      setMessage("심사기한은 오늘 이후 날짜로 선택해 주세요.");
+      return;
+    }
+    setBusy(true); setMessage("");
+    const { error } = await getSupabaseClient().rpc("assign_reviewer", { target_manuscript_id: manuscript.id, target_reviewer_id: String(form.get("reviewer")), review_due_at: new Date(`${dueAt}T23:59:59+09:00`).toISOString() });
+    if (error) setMessage(assignmentErrorMessage(error.message)); else { await onChanged(); setMessage("심사위원 1명을 배정했습니다. 나머지 심사위원은 이후에 추가 배정할 수 있습니다."); formElement.reset(); }
     setBusy(false);
   }
 
@@ -148,7 +179,7 @@ function EditorialDetail({ manuscript, profiles, assignments, reviews, issues, i
         <section className="detail-section"><h3>편집결정 입력</h3><form className="stack-form decision-form" onSubmit={decide}><label>판정<select name="decision" required><option value="REVISION_REQUESTED">수정요청</option><option value="ACCEPTED">게재가</option><option value="ACCEPT_WITH_REVISIONS">수정후게재</option><option value="REJECTED">게재불가</option><option value="FINAL_ACCEPTED">게재확정</option></select></label><label>저자 통보문<textarea name="authorLetter" rows={5} required /></label><label>내부 메모<textarea name="internalNote" rows={3} /></label><button className="button button-primary" disabled={busy}>편집결정 기록</button></form></section>
         {isAdmin && manuscript.status === "FINAL_ACCEPTED" && <PublicationForm manuscript={manuscript} issues={issues} onChanged={onChanged} />}
       </div>
-      <aside className="detail-aside"><section><div className="assignment-heading"><h3>심사위원 배정</h3><strong>{currentRoundAssignments.length} / 3명</strong></div>{currentRoundAssignments.length >= 3 ? <div className="notice-box">현재 심사차수에 심사위원 3명이 모두 배정되었습니다.</div> : <form className="stack-form compact-form" onSubmit={assign}><label>심사위원<select name="reviewer" required defaultValue=""><option value="" disabled>심사위원 선택</option>{reviewers.map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name} · {reviewer.affiliation ?? "소속 미입력"}</option>)}</select></label><label>심사기한<input name="dueAt" type="date" required min={new Date().toISOString().slice(0, 10)} /></label><button className="secondary-button" disabled={busy}>심사위원 배정</button></form>}</section><section><h3>배정현황</h3>{manuscriptAssignments.length ? manuscriptAssignments.map((assignment) => <div className="assignment-row" key={assignment.id}><b>{profiles.find((person) => person.id === assignment.reviewer_id)?.full_name ?? "심사위원"}</b><span>{assignment.round_no}차 · {assignment.status}</span><small>{formatDate(assignment.due_at)}</small></div>) : <p className="muted-text">아직 배정되지 않았습니다.</p>}</section></aside>
+      <aside className="detail-aside"><section><div className="assignment-heading"><h3>심사위원 배정</h3><strong>{currentRoundAssignments.length} / 3명</strong></div>{!assignmentAllowed ? <div className="notice-box">먼저 논문·저자 정보의 <b>형식검토 시작</b> 버튼을 눌러 주세요. 이후 심사위원을 배정할 수 있습니다.</div> : currentRoundAssignments.length >= 3 ? <div className="notice-box">현재 심사차수에 심사위원 3명이 모두 배정되었습니다.</div> : reviewers.length === 0 ? <div className="notice-box">추가로 배정할 수 있는 활성 심사위원이 없습니다.</div> : <form className="stack-form compact-form" onSubmit={assign}><p className="assignment-guide">심사위원을 1명씩 배정할 수 있습니다. 배정 후 나머지 인원을 이어서 추가해 주세요.</p><label>심사위원<select name="reviewer" required defaultValue=""><option value="" disabled>심사위원 선택</option>{reviewers.map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name} · {reviewer.affiliation ?? "소속 미입력"}</option>)}</select></label><label>심사기한<input name="dueAt" type="date" required min={dateInputAfter(1)} defaultValue={dateInputAfter(14)} /></label><button className="secondary-button" disabled={busy}>{busy ? "배정 중…" : "심사위원 1명 배정"}</button></form>}</section><section><h3>배정현황</h3>{manuscriptAssignments.length ? manuscriptAssignments.map((assignment) => <div className="assignment-row" key={assignment.id}><b>{profiles.find((person) => person.id === assignment.reviewer_id)?.full_name ?? "심사위원"}</b><span>{assignment.round_no}차 · {assignment.status}</span><small>{formatDate(assignment.due_at)}</small></div>) : <p className="muted-text">아직 배정되지 않았습니다.</p>}</section></aside>
     </div>
   </section></div>;
 }

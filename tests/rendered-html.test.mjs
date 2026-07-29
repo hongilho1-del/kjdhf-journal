@@ -117,10 +117,31 @@ test("new submissions use a full-page ethics-first authoring wizard", async () =
   assert.match(submission, /Object\.values\(ethics\)\.every\(Boolean\)/);
   assert.match(submission, /is_corresponding: index === correspondingIndex/);
   assert.match(submission, /#online-submission\?mode=new&step=ethics/);
+  assert.match(submission, /persistDraft/);
+  assert.match(submission, /임시저장한 내용을 불러왔습니다/);
+  assert.match(submission, /isKoreanText/);
+  assert.match(submission, /isEnglishText/);
+  assert.match(submission, /validatePaperLanguage\(\)/);
+  assert.match(submission, /validateAuthorLanguage\(\)/);
   assert.doesNotMatch(submission, /\bSubmissionModal\b/);
   assert.match(author, /openNewSubmissionPage/);
   assert.match(author, /online-submission\?mode=new&step=ethics/);
+  assert.match(author, /작성 이어가기/);
   assert.doesNotMatch(author, /showSubmission|\bSubmissionModal\b/);
+});
+
+test("editor assigns reviewers one at a time with a future due date", async () => {
+  const editor = await readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8");
+  assert.match(editor, /심사위원을 1명씩 배정/);
+  assert.match(editor, /심사위원 1명 배정/);
+  assert.match(editor, /min=\{dateInputAfter\(1\)\}/);
+  assert.match(editor, /defaultValue=\{dateInputAfter\(14\)\}/);
+  assert.match(editor, /!assignedReviewerIds\.has\(item\.id\)/);
+  assert.match(editor, /Math\.max\(manuscript\.round_no, 1\)/);
+  assert.match(editor, /심사기한은 오늘 이후 날짜/);
+  assert.match(editor, /\.neq\("status", "DRAFT"\)/);
+  assert.match(editor, /assignmentAllowed/);
+  assert.match(editor, /형식검토 시작/);
 });
 
 test("ships both supplied logos with the darker Kongju palette", async () => {
