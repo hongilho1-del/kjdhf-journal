@@ -27,6 +27,7 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /건강체력연구소/);
   assert.match(html, /관리자 로그인/);
   assert.match(html, /logos\/kjdhf-logo\.png/);
+  assert.match(html, /logos\/health-fitness-institute-logo\.png\?v=2/);
   assert.match(html, /논문투고 규정/);
   assert.match(html, /편집위원회/);
   assert.match(html, /연구 윤리위원회/);
@@ -110,6 +111,8 @@ test("connects JAMS-style submission, e-Journal, KCI similarity, and anonymous r
   assert.match(migration, /public\.owns_manuscript\(target_manuscript_id\)/);
   assert.doesNotMatch(migration.match(/returns table[\s\S]*?\)\nlanguage sql/)?.[0] ?? "", /reviewer_id|email|full_name/i);
   assert.doesNotMatch(migration, /editor_comments/);
+  assert.doesNotMatch(app, /jams-login-button[^\n]+온라인 투고·심사/);
+  assert.match(app, /jams-system-button[^\n]+온라인 투고·심사/);
 });
 
 test("new submissions use a full-page ethics-first authoring wizard", async () => {

@@ -210,12 +210,10 @@ export function JournalApp() {
           </button>
           <div className="jams-header-tools">
             <span>국립공주대학교 건강체력연구소</span>
-            {session && profile ? (
+            {session && profile && (
               <button className="profile-button" type="button" onClick={() => setView("profile")}>
                 <span>{profile.full_name?.slice(0, 1) || "나"}</span><b>{profile.full_name || profile.email}</b><small>{roles.map((role) => ROLE_LABELS[role]).join(" · ")}</small>
               </button>
-            ) : (
-              <button className="jams-login-button" type="button" onClick={() => openAuth()}>온라인 투고·심사</button>
             )}
           </div>
         </div>
