@@ -1972,15 +1972,13 @@ footer button { color: inherit; }
 .jams-about { padding: 92px 0; background: white; }
 .jams-about-grid { display: grid; grid-template-columns: .75fr 1.25fr; gap: 90px; }
 .jams-about-title { border-right: 1px solid var(--line); }
-.jams-about-mark { position: relative; display: grid; width: 200px; height: 110px; margin-top: 48px; place-items: center; }
-.jams-about-mark span { position: relative; z-index: 2; color: var(--forest-2); font-size: 20px; font-weight: 900; letter-spacing: .15em; }
-.jams-about-mark i { position: absolute; width: 150px; height: 64px; border: 2px solid var(--forest-2); border-radius: 50%; transform: rotate(24deg); }
-.jams-about-mark i:last-child { transform: rotate(-24deg); }
+.jams-about-logo { width: min(270px, calc(100% - 40px)); margin-top: 48px; padding: 10px; background: white; }
+.jams-about-logo img { display: block; width: 100%; height: auto; }
 .jams-about-copy h3 { margin: 0; font-size: clamp(28px, 3.2vw, 43px); letter-spacing: -.065em; line-height: 1.35; }
 .jams-about-copy > p { max-width: 700px; margin: 28px 0 36px; color: var(--muted); font-size: 14px; line-height: 1.9; }
-.jams-about-links { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); }
-.jams-about-links a { display: flex; min-height: 62px; padding: 0 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 800; }
-.jams-about-links a:hover { color: var(--forest-2); }
+.jams-about-links { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink); }
+.jams-about-links button { display: flex; min-height: 62px; padding: 0 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: var(--ink); text-align: left; font-size: 12px; font-weight: 800; }
+.jams-about-links button:hover { background: var(--mint); color: var(--forest-2); }
 
 .jams-workflow { padding: 82px 0 90px; background: var(--ink); color: white; }
 .jams-workflow-heading { display: flex; align-items: end; justify-content: space-between; }
@@ -2041,8 +2039,8 @@ footer button { color: inherit; }
   .jams-about-grid { grid-template-columns: 1fr; gap: 44px; }
   .jams-about-title { display: flex; padding-bottom: 28px; align-items: end; justify-content: space-between; border-right: 0; border-bottom: 1px solid var(--line); }
   .jams-about-title > small { align-self: flex-start; }
-  .jams-about-mark { width: 140px; height: 80px; margin: 0; }
-  .jams-about-mark i { width: 110px; height: 46px; }
+  .jams-about-logo { width: 210px; margin: 0; }
+  .jams-about-links { grid-template-columns: repeat(2, 1fr); }
   .jams-workflow ol { grid-template-columns: repeat(2, 1fr); }
   .jams-workflow li:last-child { grid-column: 1 / -1; }
   .jams-related-inner { align-items: flex-start; flex-direction: column; gap: 18px; }
@@ -2082,7 +2080,7 @@ footer button { color: inherit; }
   .jams-about { padding: 62px 0; }
   .jams-about-title { display: block; }
   .jams-about-title h2 { font-size: 24px; }
-  .jams-about-mark { margin-top: 30px; }
+  .jams-about-logo { width: min(260px, 100%); margin-top: 30px; }
   .jams-about-copy h3 { font-size: 28px; }
   .jams-about-links { grid-template-columns: 1fr; }
   .jams-workflow { padding: 62px 0; }
@@ -2101,6 +2099,7 @@ footer button { color: inherit; }
 /* 공지사항·학회행사 게시판 */
 .sr-only { position: absolute; overflow: hidden; width: 1px; height: 1px; padding: 0; border: 0; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .community-page { min-height: 720px; background: white; }
+.journal-information-page { min-height: 720px; background: white; }
 .community-hero { padding: 64px 0 48px; background: linear-gradient(118deg, var(--ink), var(--forest)); color: white; }
 .community-hero p { margin: 0 0 10px; color: #80d9fb; font-size: 9px; font-weight: 900; letter-spacing: .18em; }
 .community-hero h1 { margin: 0; font-size: 36px; letter-spacing: -.055em; }
@@ -2111,6 +2110,11 @@ footer button { color: inherit; }
 .community-side-nav h2 { margin: 0; padding: 24px 18px; background: #f2f5f9; font-size: 20px; }
 .community-side-nav button { display: flex; width: 100%; min-height: 54px; padding: 0 17px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: var(--muted); text-align: left; font-size: 12px; font-weight: 750; }
 .community-side-nav button.active { background: var(--forest-2); color: white; }
+.journal-information-placeholder { min-height: 360px; padding: 70px 44px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #f7f9fc, #edf3f8); }
+.journal-information-placeholder > span { color: var(--forest-2); font-size: 9px; font-weight: 900; letter-spacing: .18em; }
+.journal-information-placeholder h3 { margin: 17px 0 13px; font-size: 25px; letter-spacing: -.045em; }
+.journal-information-placeholder p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.journal-information-placeholder button { min-width: 190px; min-height: 46px; margin-top: 30px; padding: 0 18px; background: #cad4df; color: #647486; font-size: 11px; font-weight: 800; cursor: not-allowed; }
 .community-heading { display: flex; min-height: 76px; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid var(--ink); }
 .community-heading small { color: var(--forest-2); font-size: 8px; font-weight: 900; letter-spacing: .16em; }
 .community-heading h2 { margin: 7px 0 0; font-size: 28px; letter-spacing: -.05em; }
@@ -2173,6 +2177,8 @@ footer button { color: inherit; }
   .community-layout { padding: 36px 0 70px; grid-template-columns: 1fr; gap: 34px; }
   .community-side-nav { display: grid; grid-template-columns: 1fr 1fr; }
   .community-side-nav h2 { grid-column: 1 / -1; }
+  .journal-information-nav { grid-template-columns: 1fr 1fr; }
+  .journal-information-placeholder { min-height: 300px; padding: 48px 24px; }
   .community-heading h2 { font-size: 24px; }
   .board-table th:first-child, .board-table td:first-child { display: none; }
   .board-table th:nth-child(2), .board-table td:nth-child(2) { width: auto; }

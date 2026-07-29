@@ -27,6 +27,27 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /건강체력연구소/);
   assert.match(html, /관리자 로그인/);
   assert.match(html, /logos\/kjdhf-logo\.png/);
+  assert.match(html, /논문투고 규정/);
+  assert.match(html, /편집위원회/);
+  assert.match(html, /연구 윤리위원회/);
+  assert.match(html, /논문 양식 다운로드/);
+});
+
+test("journal information links use the supplied logo and open four dedicated views", async () => {
+  const [home, information, app] = await Promise.all([
+    readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(home, /logos\/kjdhf-logo\.png/);
+  assert.doesNotMatch(home, /jams-about-mark/);
+  for (const page of ["submission-guidelines", "editorial-board", "research-ethics", "manuscript-template"]) {
+    assert.match(home, new RegExp(page));
+    assert.match(information, new RegExp(page));
+  }
+  assert.match(app, /isJournalInformationPage\(hashPage\)/);
+  assert.match(app, /<JournalInformation page=\{view\}/);
+  assert.match(information, /논문 양식 준비 중/);
 });
 
 test("ships both supplied logos with the darker Kongju palette", async () => {

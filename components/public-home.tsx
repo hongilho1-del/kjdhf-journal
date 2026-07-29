@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { JournalInformationPage } from "@/components/journal-information";
 import { formatDate, type BoardCategory, type BoardPost } from "@/lib/journal";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const fallbackNotices: BoardPost[] = [
   { id: "fallback-system", category: "NOTICE", title: "온라인 논문투고·심사 시스템 이용 안내", content: "저자, 심사위원, 편집위원은 로그인 후 역할별 업무를 이용할 수 있습니다.", event_start_at: null, event_end_at: null, location: null, is_pinned: true, is_published: true, published_at: "2026-07-29T00:00:00+09:00", author_id: null, created_at: "2026-07-29T00:00:00+09:00", updated_at: "2026-07-29T00:00:00+09:00" },
@@ -17,7 +20,7 @@ const workflow = [
   ["05", "게재 및 발행", "최종원고를 발행호에 배정해 기록합니다."],
 ];
 
-export function PublicHome({ onEnter, onOpenBoard }: { onEnter: () => void; onOpenBoard: (category: BoardCategory, postId?: string) => void }) {
+export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnter: () => void; onOpenBoard: (category: BoardCategory, postId?: string) => void; onOpenInformation: (page: JournalInformationPage) => void }) {
   const [posts, setPosts] = useState<BoardPost[]>(fallbackNotices);
   const [activeCategory, setActiveCategory] = useState<BoardCategory>("NOTICE");
 
@@ -117,7 +120,10 @@ export function PublicHome({ onEnter, onOpenBoard }: { onEnter: () => void; onOp
           <div className="jams-about-title">
             <small>ABOUT THE JOURNAL</small>
             <h2>학회지 소개</h2>
-            <div className="jams-about-mark"><span>KJDHF</span><i /><i /></div>
+            <div className="jams-about-logo">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
+              <img src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
+            </div>
           </div>
           <div className="jams-about-copy">
             <h3>건강체력 연구의 디지털 전환과<br />신뢰할 수 있는 학술 소통을 지향합니다.</h3>
@@ -126,9 +132,10 @@ export function PublicHome({ onEnter, onOpenBoard }: { onEnter: () => void; onOp
               연구윤리와 이중맹검 원칙에 따라 투고부터 심사, 판정, 발행까지 모든 과정을 기록합니다.
             </p>
             <div className="jams-about-links" id="journal-policy">
-              <a href="#journal-workflow">논문투고 규정 <span>→</span></a>
-              <a href="#journal-policy">편집위원회 <span>→</span></a>
-              <a href="#journal-policy">연구윤리 규정 <span>→</span></a>
+              <button type="button" onClick={() => onOpenInformation("submission-guidelines")}>논문투고 규정 <span>→</span></button>
+              <button type="button" onClick={() => onOpenInformation("editorial-board")}>편집위원회 <span>→</span></button>
+              <button type="button" onClick={() => onOpenInformation("research-ethics")}>연구 윤리위원회 <span>→</span></button>
+              <button type="button" onClick={() => onOpenInformation("manuscript-template")}>논문 양식 다운로드 <span>→</span></button>
             </div>
           </div>
         </div>
