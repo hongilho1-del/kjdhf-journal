@@ -14,6 +14,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
     if (!isSupabaseConfigured) return;
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
+    const username = String(form.get("username") ?? "").trim().toLowerCase();
     const password = String(form.get("password") ?? "");
     const fullName = String(form.get("fullName") ?? "").trim();
     setBusy(true);
@@ -32,17 +33,23 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
         if (error) throw error;
         if (data.session) await supabase.auth.signOut();
         setMessage("가입 신청이 접수되었습니다. 이메일 인증과 관리자 승인 후 로그인할 수 있습니다.");
+      } else if (adminLogin) {
+        const { data, error } = await supabase.functions.invoke("admin-login", {
+          body: { username, password },
+        });
+        if (error || !data?.access_token || !data?.refresh_token) {
+          throw new Error("관리자 아이디 또는 비밀번호를 확인해 주세요.");
+        }
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        if (sessionError) throw sessionError;
+        onClose();
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (adminLogin) {
-          const { data: adminProfile, error: profileError } = await supabase.from("profiles").select("role,is_active").eq("id", data.user.id).maybeSingle();
-          if (profileError) throw profileError;
-          if (!adminProfile?.is_active || adminProfile.role !== "ADMIN") {
-            await supabase.auth.signOut();
-            throw new Error("승인된 관리자 계정이 아닙니다. 일반 로그인 또는 저자 회원가입을 이용해 주세요.");
-          }
-        }
+        if (!data.user) throw new Error("로그인 정보를 확인해 주세요.");
         onClose();
       }
     } catch (error) {
@@ -60,7 +67,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
         <h2 id="auth-title">{adminLogin ? "관리자 로그인" : mode === "login" ? "시스템 로그인" : "저자 회원가입 신청"}</h2>
         <p className="panel-description">
           {adminLogin
-            ? "별도로 발급된 ADMIN 계정으로 로그인하세요. 관리자 계정은 공개 회원가입으로 만들 수 없습니다."
+            ? "별도로 발급된 관리자 아이디와 비밀번호를 입력하세요. 계정 이메일은 로그인 화면에 사용하지 않습니다."
             : mode === "login"
             ? "등록된 계정으로 논문투고·심사 업무를 계속하세요."
             : "신규 계정은 저자 권한으로 신청되며, 이메일 인증과 관리자의 가입 승인 후 이용할 수 있습니다."}
@@ -74,7 +81,11 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
           {mode === "signup" && (
             <label>이름<input name="fullName" autoComplete="name" required minLength={2} /></label>
           )}
-          <label>이메일<input name="email" type="email" autoComplete="email" required /></label>
+          {adminLogin ? (
+            <label>관리자 아이디<input name="username" type="text" autoComplete="username" autoCapitalize="none" pattern="[a-z][a-z0-9._-]{2,31}" minLength={3} maxLength={32} placeholder="admin" required /></label>
+          ) : (
+            <label>이메일<input name="email" type="email" autoComplete="email" required /></label>
+          )}
           <label>비밀번호<input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} /></label>
           <button className="button button-primary form-submit" disabled={busy || !isSupabaseConfigured}>
             {busy ? "처리 중…" : mode === "login" ? "로그인" : "가입 신청"}

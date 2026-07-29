@@ -68,6 +68,7 @@ Supabase
 - `20260729010000_storage_object_policies.sql`: Storage 객체 정책
 - `20260729032000_member_approval_and_boards.sql`: 회원 승인과 공지·행사 게시판
 - `20260729050000_three_reviewer_workflow.sql`: 논문별 심사위원 3명 배정 규칙
+- `20260729063000_admin_username_login.sql`: 관리자 사용자명과 Auth 계정의 비공개 매핑
 
 ## 개발환경 실행
 
@@ -98,6 +99,7 @@ supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 supabase functions deploy file-access
+supabase functions deploy admin-login --no-verify-jwt
 supabase gen types typescript --linked --schema public > lib/supabase/database.types.ts
 ```
 
@@ -134,8 +136,8 @@ Redirect URLs: https://OWNER.github.io/REPOSITORY/**
 
 관리자는 공개 회원가입을 사용하지 않습니다.
 
-1. Supabase Dashboard의 **Authentication → Users → Add user**에서 관리자 이메일과 초기 비밀번호를 별도로 발급하고 이메일을 자동 확인 처리합니다.
-2. SQL Editor에서 방금 만든 계정을 최초 관리자로 활성화합니다.
+1. Supabase Dashboard의 **Authentication → Users → Add user**에서 관리자용 실제 이메일과 초기 비밀번호를 입력하고 이메일을 자동 확인 처리합니다. 이메일은 계정 관리·복구용이며 관리자 로그인 화면에는 입력하지 않습니다.
+2. SQL Editor에서 방금 만든 계정을 최초 관리자로 활성화하고 로그인 아이디를 `admin`으로 연결합니다.
 
 ```sql
 update public.profiles
@@ -143,10 +145,15 @@ set role = 'ADMIN',
     is_active = true,
     approved_at = now(),
     approved_by = id
-where email = 'admin@example.org';
+where email = '관리자용 실제 이메일';
+
+insert into public.admin_login_aliases (username, user_id, created_by)
+select 'admin', id, id
+from public.profiles
+where email = '관리자용 실제 이메일';
 ```
 
-3. 사이트 최상단의 **관리자 로그인**을 눌러 발급한 이메일과 비밀번호로 로그인합니다.
+3. 사이트 최상단의 **관리자 로그인**을 눌러 아이디 `admin`과 Add user에서 설정한 비밀번호로 로그인합니다.
 4. 관리자 대시보드의 **가입·권한 관리**에서 회원가입을 승인하고 역할을 부여합니다. **공지·행사 관리**에서는 게시물을 등록하거나 편집할 수 있습니다.
 
 일반 사용자는 `profiles.role`을 직접 수정할 권한이 없습니다. 이후 역할 변경은 `ADMIN`만 호출 가능한 `set_user_role` RPC를 거치며 `profile_role_history`에 기록됩니다.

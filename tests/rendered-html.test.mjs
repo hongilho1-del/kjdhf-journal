@@ -40,14 +40,15 @@ test("keeps privileged credentials out of frontend source", async () => {
   assert.match(source, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
 });
 
-test("migrations define RLS, audit history, approval, three-reviewer workflow, boards, and private storage boundaries", async () => {
-  const [schema, rls, buckets, policies, community, reviewerWorkflow] = await Promise.all([
+test("migrations define RLS, audit history, admin aliases, approval, three-reviewer workflow, boards, and private storage boundaries", async () => {
+  const [schema, rls, buckets, policies, community, reviewerWorkflow, adminAliases] = await Promise.all([
     readFile(new URL("../supabase/migrations/20260728165759_initial_schema.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165805_rls_and_workflow.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729010000_storage_object_policies.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729050000_three_reviewer_workflow.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729063000_admin_username_login.sql", import.meta.url), "utf8"),
   ]);
   for (const table of ["profiles", "manuscripts", "authors", "manuscript_files", "reviewer_assignments", "reviews", "editorial_decisions", "manuscript_status_history", "issues", "published_articles"]) {
     assert.match(schema, new RegExp(`create table public\\.${table}\\b`, "i"));
@@ -64,6 +65,21 @@ test("migrations define RLS, audit history, approval, three-reviewer workflow, b
   assert.match(community, /alter column is_active set default false/i);
   assert.match(reviewerWorkflow, /active_count\s*>=\s*3/i);
   assert.match(reviewerWorkflow, /accepted_count\s*>=\s*3/i);
+  assert.match(adminAliases, /create table public\.admin_login_aliases\b/i);
+  assert.match(adminAliases, /revoke all on public\.admin_login_aliases from anon, authenticated/i);
+});
+
+test("admin username login resolves email only inside the server function", async () => {
+  const [panel, loginFunction] = await Promise.all([
+    readFile(new URL("../components/auth-panel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/functions/admin-login/index.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(panel, /관리자 아이디/);
+  assert.match(panel, /functions\.invoke\(["']admin-login["']/);
+  assert.doesNotMatch(panel, /admin_login_aliases/);
+  assert.match(loginFunction, /auth\.admin\.getUserById/);
+  assert.match(loginFunction, /profile\.role !== ["']ADMIN["']/);
+  assert.doesNotMatch(loginFunction, /return json\(\{[^}]*email/s);
 });
 
 test("reviewer UI never queries author identity tables", async () => {

@@ -6,3 +6,6 @@ additional_redirect_urls = ["http://localhost:3000/**"]
 
 [functions.file-access]
 verify_jwt = true
+
+[functions.admin-login]
+verify_jwt = false

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_login_aliases: {
+        Row: {
+          created_at: string
+          created_by: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_login_aliases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_login_aliases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       authors: {
         Row: {
           affiliation_en: string | null
@@ -979,6 +1018,25 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_admin_login_alias: {
+        Args: {
+          login_username: string
+          target_user_id: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "admin_login_aliases"
           isOneToOne: true
           isSetofReturn: false
         }
