@@ -837,6 +837,16 @@ export type Database = {
           round_no: number
         }[]
       }
+      get_author_review_results: {
+        Args: { target_manuscript_id: string }
+        Returns: {
+          author_comments: string
+          recommendation: Database["public"]["Enums"]["review_recommendation"]
+          reviewer_no: number
+          round_no: number
+          submitted_at: string
+        }[]
+      }
       get_author_status_history: {
         Args: { target_manuscript_id: string }
         Returns: {

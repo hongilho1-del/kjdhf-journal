@@ -69,6 +69,28 @@ test("authenticated users get a My Page with personal manuscript management", as
   assert.match(author, /최종원고 제출/);
 });
 
+test("connects JAMS-style submission, e-Journal, KCI similarity, and anonymous review results", async () => {
+  const [app, home, submission, ejournal, result, migration] = await Promise.all([
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/e-journal-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/author-review-result-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729150000_author_review_results.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(app, /#online-submission/);
+  assert.match(app, /#e-journal\?tab=/);
+  for (const label of ["신규논문제출", "수정논문제출", "최종논문제출", "내논문심사현황"]) assert.match(submission, new RegExp(label));
+  assert.match(home + submission, /https:\/\/check\.kci\.go\.kr\//);
+  assert.match(ejournal, /논문 검색/);
+  assert.match(ejournal, /발행 학술지/);
+  assert.match(result, /심사위원 \{review\.reviewer_no\}/);
+  assert.match(result, /수정원고 제출/);
+  assert.match(migration, /public\.owns_manuscript\(target_manuscript_id\)/);
+  assert.doesNotMatch(migration.match(/returns table[\s\S]*?\)\nlanguage sql/)?.[0] ?? "", /reviewer_id|email|full_name/i);
+  assert.doesNotMatch(migration, /editor_comments/);
+});
+
 test("ships both supplied logos with the darker Kongju palette", async () => {
   const [journalLogo, transparentLogo, instituteLogo, css, app] = await Promise.all([
     stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),

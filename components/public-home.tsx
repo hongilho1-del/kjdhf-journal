@@ -20,7 +20,7 @@ const workflow = [
   ["05", "게재 및 발행", "최종원고를 발행호에 배정해 기록합니다."],
 ];
 
-export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnter: () => void; onOpenBoard: (category: BoardCategory, postId?: string) => void; onOpenInformation: (page: JournalInformationPage) => void }) {
+export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onOpenInformation }: { onEnter: () => void; onSubmit: () => void; onOpenEJournal: (tab?: "search" | "journal") => void; onOpenBoard: (category: BoardCategory, postId?: string) => void; onOpenInformation: (page: JournalInformationPage) => void }) {
   const [posts, setPosts] = useState<BoardPost[]>(fallbackNotices);
   const [activeCategory, setActiveCategory] = useState<BoardCategory>("NOTICE");
 
@@ -44,7 +44,7 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
             <span>공정한 이중맹검 심사와 투명한 학술 기록을 위한 온라인 시스템</span>
           </div>
           <div className="jams-hero-actions">
-            <button type="button" onClick={onEnter}><small>AUTHOR</small><strong>신규 논문투고</strong><span>→</span></button>
+            <button type="button" onClick={onSubmit}><small>AUTHOR</small><strong>신규 논문투고</strong><span>→</span></button>
             <button type="button" onClick={onEnter}><small>REVIEWER · EDITOR</small><strong>심사·편집 업무</strong><span>→</span></button>
           </div>
         </div>
@@ -55,7 +55,7 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
           <article className="jams-latest" id="latest-journal">
             <div className="jams-panel-heading">
               <div><small>e-JOURNAL</small><h2>최신발행학술지</h2></div>
-              <button type="button" onClick={onEnter}>전체보기 +</button>
+              <button type="button" onClick={() => onOpenEJournal("journal")}>전체보기 +</button>
             </div>
             <div className="jams-latest-body">
               <div className="jams-cover" aria-label="한국 디지털 건강체력학회지 표지">
@@ -106,8 +106,8 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
               ["02", "심사의뢰", "배정된 논문을 확인하고 심사의견을 제출합니다."],
               ["03", "편집업무", "형식검토, 심사위원 배정, 판정을 진행합니다."],
               ["04", "나의 할 일", "현재 역할에 맞는 업무와 마감일을 확인합니다."],
-            ].map(([number, title, description]) => (
-              <button type="button" onClick={onEnter} key={number}>
+            ].map(([number, title, description], index) => (
+              <button type="button" onClick={index === 0 ? onSubmit : onEnter} key={number}>
                 <span>{number}</span><strong>{title}</strong><p>{description}</p><i>→</i>
               </button>
             ))}
@@ -152,7 +152,7 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
               <li key={number}><span>{number}</span><strong>{title}</strong><p>{description}</p></li>
             ))}
           </ol>
-          <button className="jams-workflow-button" type="button" onClick={onEnter}>온라인 투고·심사 시작 <span>→</span></button>
+          <button className="jams-workflow-button" type="button" onClick={onSubmit}>온라인 투고·심사 시작 <span>→</span></button>
         </div>
       </section>
 
@@ -162,6 +162,7 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
           <nav>
             <a href="https://www.kongju.ac.kr/" target="_blank" rel="noreferrer">국립공주대학교 <span>↗</span></a>
             <a href="https://www.kci.go.kr/" target="_blank" rel="noreferrer">한국학술지인용색인 <span>↗</span></a>
+            <a href="https://check.kci.go.kr/" target="_blank" rel="noreferrer">KCI 논문 유사도 검사 <span>↗</span></a>
             <a href="https://www.nrf.re.kr/" target="_blank" rel="noreferrer">한국연구재단 <span>↗</span></a>
           </nav>
         </div>

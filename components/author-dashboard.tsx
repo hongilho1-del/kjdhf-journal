@@ -19,6 +19,12 @@ type AuthorDecision = { decision: keyof typeof DECISION_LABELS; author_letter: s
 type AuthorHistory = { from_status: keyof typeof STATUS_LABELS | null; to_status: keyof typeof STATUS_LABELS; note: string | null; changed_at: string };
 type ManuscriptFilter = "all" | "received" | "review" | "revision" | "final";
 
+export function openAuthorReviewResult(manuscriptId: string) {
+  const url = new URL(window.location.href);
+  url.hash = `author-review-result?manuscript=${encodeURIComponent(manuscriptId)}`;
+  window.open(url.toString(), "_blank", "noopener,noreferrer");
+}
+
 const FILTER_STATUSES: Record<Exclude<ManuscriptFilter, "all">, ManuscriptStatus[]> = {
   received: ["SUBMITTED", "RECEIVED", "FORMAT_REVIEW"],
   review: ["REVIEWER_SELECTION", "UNDER_REVIEW", "RE_REVIEW"],
@@ -116,6 +122,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
                   {manuscript.status === "DRAFT" && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "draft" })}>파일 추가·제출</button>}
                   {manuscript.status === "REVISION_REQUESTED" && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "revision" })}>수정원고 제출</button>}
                   {["ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(manuscript.status) && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "final" })}>최종원고 제출</button>}
+                  {!["DRAFT", "SUBMITTED", "RECEIVED", "FORMAT_REVIEW", "REVIEWER_SELECTION"].includes(manuscript.status) && <button type="button" onClick={() => openAuthorReviewResult(manuscript.id)}>결과</button>}
                   <button type="button" onClick={() => void openDetail(manuscript)}>이력 보기</button>
                 </div></td>
               </tr>
@@ -134,7 +141,7 @@ function Metric({ label, value, tone = "default" }: { label: string; value: numb
   return <article className={`metric-card metric-${tone}`}><span>{label}</span><strong>{String(value).padStart(2, "0")}</strong><i /></article>;
 }
 
-function SubmissionModal({ profile, onClose, onComplete }: { profile: Profile; onClose: () => void; onComplete: () => Promise<void> }) {
+export function SubmissionModal({ profile, onClose, onComplete }: { profile: Profile; onClose: () => void; onComplete: () => Promise<void> }) {
   const [coauthors, setCoauthors] = useState<Coauthor[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -256,7 +263,7 @@ function SubmissionModal({ profile, onClose, onComplete }: { profile: Profile; o
   );
 }
 
-function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: { manuscript: Manuscript; mode: "draft" | "revision" | "final"; onClose: () => void; onComplete: () => Promise<void> }) {
+export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: { manuscript: Manuscript; mode: "draft" | "revision" | "final"; onClose: () => void; onComplete: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const title = mode === "draft" ? "임시원고 제출 완료" : mode === "revision" ? "수정원고 제출" : "최종원고 제출";
