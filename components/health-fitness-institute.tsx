@@ -1,5 +1,7 @@
 "use client";
 
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export function HealthFitnessInstitute({ onBackHome }: { onBackHome: () => void }) {
   return (
     <section className="institute-page">
@@ -10,7 +12,10 @@ export function HealthFitnessInstitute({ onBackHome }: { onBackHome: () => void 
             <h1>건강체력연구소</h1>
             <span>건강과 체력에 관한 교육·연구를 연결하는 국립공주대학교 연구기관</span>
           </div>
-          <div className="institute-monogram" aria-hidden="true"><span>HFI</span><i /><i /></div>
+          <div className="institute-logo-card">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
+            <img src={`${assetBasePath}/logos/health-fitness-institute-logo.png`} alt="건강체력연구소" width={780} height={510} />
+          </div>
         </div>
       </div>
       <div className="shell institute-content">

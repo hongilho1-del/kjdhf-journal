@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -26,6 +26,19 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /온라인 투고·심사 시작/);
   assert.match(html, /건강체력연구소/);
   assert.match(html, /관리자 로그인/);
+  assert.match(html, /logos\/kjdhf-logo\.png/);
+});
+
+test("ships both supplied logos with the darker Kongju palette", async () => {
+  const [journalLogo, instituteLogo, css] = await Promise.all([
+    stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),
+    stat(new URL("../public/logos/health-fitness-institute-logo.png", import.meta.url)),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.ok(journalLogo.size > 10_000);
+  assert.ok(instituteLogo.size > 10_000);
+  assert.match(css, /--ink:\s*#061a38/i);
+  assert.match(css, /--forest:\s*#082b5d/i);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {

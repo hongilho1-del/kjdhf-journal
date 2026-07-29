@@ -14,6 +14,7 @@ import { ROLE_LABELS, type BoardCategory, type Profile } from "@/lib/journal";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type View = "home" | "institute" | "notice" | "events" | "dashboard" | "profile";
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 function publicViewFromHash(): View {
   if (typeof window === "undefined") return "home";
@@ -146,8 +147,8 @@ export function JournalApp() {
       <header className="jams-site-header">
         <div className="shell jams-masthead">
           <button className="brand brand-button jams-brand" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
-            <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-            <span className="brand-copy"><strong>한국 디지털 건강체력학회지</strong><small>KOREAN JOURNAL OF DIGITAL HEALTH &amp; FITNESS</small></span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
+            <img className="journal-brand-logo" src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} />
           </button>
           <div className="jams-header-tools">
             <span>국립공주대학교 건강체력연구소</span>
@@ -195,9 +196,9 @@ export function JournalApp() {
 
       <footer className="jams-footer">
         <div className="shell jams-footer-grid">
-          <button className="brand footer-brand brand-button" type="button" onClick={openHome}>
-            <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-            <span className="brand-copy"><strong>한국 디지털 건강체력학회지</strong><small>KJDHF ONLINE JOURNAL</small></span>
+          <button className="brand footer-brand brand-button" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
+            <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
           </button>
           <div className="jams-footer-info">
             <p>국립공주대학교 건강체력연구소 · 한국 디지털 건강체력학회지 편집국</p>

@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #1e2e55;
-  --forest: #1c3d8d;
-  --forest-2: #1b60c6;
-  --lime: #0a9bda;
-  --mint: #eef5fb;
+  --ink: #061a38;
+  --forest: #082b5d;
+  --forest-2: #0d4787;
+  --lime: #0877ad;
+  --mint: #e9f0f7;
   --paper: #f5f5f5;
   --warm: #e8e8e8;
   --white: #ffffff;
-  --line: rgba(30, 46, 85, 0.16);
+  --line: rgba(6, 26, 56, 0.18);
   --muted: #79858f;
   --orange: #f68a1e;
 }
@@ -1762,6 +1762,13 @@ footer button { color: inherit; }
   gap: 28px;
 }
 
+.journal-brand-logo {
+  display: block;
+  width: 270px;
+  height: 84px;
+  object-fit: contain;
+}
+
 .jams-brand .brand-mark { width: 42px; height: 42px; color: var(--forest); }
 .jams-brand .brand-mark::before { width: 40px; height: 18px; }
 .jams-brand .brand-mark::after { width: 18px; height: 40px; }
@@ -1992,8 +1999,10 @@ footer button { color: inherit; }
 .jams-related nav { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--line); }
 .jams-related a { display: flex; min-height: 48px; padding: 0 22px; align-items: center; justify-content: space-between; border-right: 1px solid var(--line); color: #596774; font-size: 11px; font-weight: 750; }
 
-.jams-footer { padding: 42px 0 34px; background: #172441; }
+.jams-footer { padding: 42px 0 34px; background: #05152e; }
 .jams-footer-grid { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 48px; }
+.jams-footer .footer-brand { padding: 8px 12px; background: white; border-radius: 2px; }
+.footer-journal-logo { display: block; width: 250px; height: 82px; object-fit: contain; }
 .jams-footer-info p { margin: 3px 0; color: rgba(255, 255, 255, .62); font-size: 11px; }
 .jams-footer-info small { display: block; margin-top: 14px; color: rgba(255, 255, 255, .33); font-size: 8px; letter-spacing: .08em; }
 .jams-top-button { align-self: stretch; padding: 0 20px; border: 1px solid rgba(255, 255, 255, .18); color: rgba(255, 255, 255, .65); font-size: 9px; font-weight: 800; }
@@ -2053,6 +2062,7 @@ footer button { color: inherit; }
   .jams-brand .brand-mark::after { width: 13px; height: 30px; }
   .jams-brand .brand-mark i:nth-child(1) { width: 24px; height: 24px; }
   .jams-brand .brand-copy strong { max-width: 190px; font-size: 13px; line-height: 1.3; }
+  .journal-brand-logo { width: 188px; height: 60px; }
   .jams-header-tools .jams-login-button, .jams-header-tools .profile-button b, .jams-header-tools .profile-button small { display: none; }
   .jams-system-button { min-width: 178px; padding: 0 15px; font-size: 11px; }
   .jams-hero, .jams-hero-inner { min-height: 520px; }
@@ -2085,6 +2095,7 @@ footer button { color: inherit; }
   .jams-related a { border-bottom: 1px solid var(--line); }
   .jams-footer-grid { gap: 26px; }
   .jams-footer .brand-copy strong { font-size: 14px; }
+  .footer-journal-logo { width: 190px; height: 66px; }
 }
 
 /* 공지사항·학회행사 게시판 */
@@ -2181,10 +2192,8 @@ footer button { color: inherit; }
 .institute-hero p { margin: 0 0 14px; color: #80d9fb; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
 .institute-hero h1 { margin: 0; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.065em; }
 .institute-hero div > span { display: block; margin-top: 20px; color: rgba(255, 255, 255, .66); font-size: 13px; }
-.institute-monogram { position: relative; display: grid; width: 220px; height: 150px; place-items: center; }
-.institute-monogram span { position: relative; z-index: 2; margin: 0; color: white; font-size: 25px; font-weight: 900; letter-spacing: .18em; }
-.institute-monogram i { position: absolute; width: 190px; height: 82px; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; transform: rotate(24deg); }
-.institute-monogram i:last-child { transform: rotate(-24deg); }
+.institute-logo-card { width: 340px; padding: 16px; background: white; border: 1px solid rgba(255, 255, 255, .45); box-shadow: 0 18px 46px rgba(0, 0, 0, .16); }
+.institute-logo-card img { display: block; width: 100%; height: auto; }
 .institute-content { padding: 28px 0 100px; }
 .institute-content > nav { display: flex; padding-bottom: 24px; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; }
 .institute-content > nav strong { color: var(--ink); }
@@ -2202,7 +2211,8 @@ footer button { color: inherit; }
 
 @media (max-width: 760px) {
   .institute-hero-inner { min-height: 320px; }
-  .institute-monogram { display: none; }
+  .institute-hero-inner { padding: 48px 0; align-items: flex-start; flex-direction: column; gap: 30px; }
+  .institute-logo-card { width: min(300px, 100%); }
   .institute-intro { padding: 52px 0 36px; grid-template-columns: 1fr; gap: 18px; }
   .institute-cards { grid-template-columns: 1fr; }
   .institute-cards article { min-height: 160px; }
