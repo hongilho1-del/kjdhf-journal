@@ -50,6 +50,24 @@ test("journal information links use the supplied logo and open four dedicated vi
   assert.match(information, /논문 양식 준비 중/);
 });
 
+test("authenticated users get a My Page with personal manuscript management", async () => {
+  const [app, author] = await Promise.all([
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(app, /session && <button className="my-page-link"/);
+  assert.match(app, /function openMyPage\(\)/);
+  assert.match(app, /#my-page/);
+  assert.match(app, />My Page</);
+  for (const label of ["나의 할 일", "논문 총괄현황", "논문 접수 현황", "논문 심사 진행 현황", "수정 논문 제출 현황", "최종 논문 제출 현황"]) {
+    assert.match(author, new RegExp(label));
+  }
+  assert.match(author, /filteredManuscripts\.map/);
+  assert.match(author, /신규 논문 투고/);
+  assert.match(author, /수정원고 제출/);
+  assert.match(author, /최종원고 제출/);
+});
+
 test("ships both supplied logos with the darker Kongju palette", async () => {
   const [journalLogo, instituteLogo, css] = await Promise.all([
     stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),

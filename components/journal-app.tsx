@@ -95,8 +95,15 @@ export function JournalApp() {
   }
 
   function enterSystem() {
-    if (session) setView("dashboard");
+    if (session) openMyPage();
     else openAuth();
+  }
+
+  function openMyPage() {
+    setView("dashboard");
+    setBoardPostId(null);
+    window.history.pushState(null, "", "#my-page");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function openAuth(asAdmin = false, mode: "login" | "signup" = "login") {
@@ -153,7 +160,9 @@ export function JournalApp() {
             {!session && <button type="button" onClick={() => openAuth()}>로그인</button>}
             {!session && <button type="button" onClick={() => openAuth(false, "signup")}>회원가입</button>}
             {!session && <button className="admin-login-link" type="button" onClick={() => openAuth(true)}>관리자 로그인</button>}
-            {session && <button type="button" onClick={() => setView("dashboard")}>나의 업무</button>}
+            {session && profile && <span className="utility-user">{profile.full_name || profile.email}님</span>}
+            {session && <button className="my-page-link" type="button" onClick={openMyPage}>MY PAGE</button>}
+            {session && <button type="button" onClick={() => setView("profile")}>회원정보 수정</button>}
             {session && <button type="button" onClick={() => void signOut()}>로그아웃</button>}
           </nav>
         </div>
@@ -184,7 +193,7 @@ export function JournalApp() {
               <button type="button" onClick={() => openInformation("submission-guidelines")}>심사안내</button>
               <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
               <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
-              {session && <button type="button" onClick={() => setView("dashboard")}>나의 업무</button>}
+              {session && <button className="my-page-nav-link" type="button" onClick={openMyPage}>MY PAGE</button>}
             </nav>
             <details className="jams-mobile-menu">
               <summary aria-label="전체 메뉴"><span /><span /><span /></summary>
@@ -195,15 +204,16 @@ export function JournalApp() {
                 <button type="button" onClick={() => openInformation("submission-guidelines")}>심사안내</button>
                 <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
                 <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
-                <button type="button" onClick={enterSystem}>온라인 투고·심사</button>
+                {session && <button type="button" onClick={openMyPage}>MY PAGE</button>}
+                {!session && <button type="button" onClick={enterSystem}>온라인 투고·심사</button>}
               </nav>
             </details>
-            <button className="jams-system-button" type="button" onClick={enterSystem}>온라인 투고·심사 <span>→</span></button>
+            <button className="jams-system-button" type="button" onClick={enterSystem}>{session ? "MY PAGE" : "온라인 투고·심사"} <span>→</span></button>
           </div>
         </div>
       </header>
 
-      {view === "home" ? <PublicHome onEnter={enterSystem} onOpenBoard={openBoard} onOpenInformation={openInformation} /> : view === "institute" ? <HealthFitnessInstitute onBackHome={openHome} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : isJournalInformationPage(view) ? <JournalInformation page={view} onNavigate={openInformation} onBackHome={openHome} /> : !session || !profile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => openAuth()}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : <section className="workspace"><div className="shell workspace-shell">
+      {view === "home" ? <PublicHome onEnter={enterSystem} onOpenBoard={openBoard} onOpenInformation={openInformation} /> : view === "institute" ? <HealthFitnessInstitute onBackHome={openHome} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : isJournalInformationPage(view) ? <JournalInformation page={view} onNavigate={openInformation} onBackHome={openHome} /> : !session || !profile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => openAuth()}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : <section className="workspace"><div className="shell my-page-heading"><div><small>PERSONAL JOURNAL SERVICE</small><h1>My Page</h1></div><p><strong>{profile.full_name || profile.email}</strong>님의 {ROLE_LABELS[profile.role]} 전용 업무공간입니다.</p></div><div className="shell workspace-shell">
         <div className="workspace-top"><div><span>{ROLE_LABELS[profile.role]}</span><strong>{profile.email}</strong></div><nav><button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>대시보드</button><button className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}>내 정보</button></nav></div>
         {view === "profile" ? <ProfilePanel profile={profile} onSaved={() => loadProfile(profile.id)} /> : profile.role === "AUTHOR" ? <AuthorDashboard profile={profile} /> : profile.role === "REVIEWER" ? <ReviewerDashboard profile={profile} /> : <EditorDashboard profile={profile} />}
       </div></section>}

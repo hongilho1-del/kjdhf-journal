@@ -1466,7 +1466,12 @@ button:focus-visible {
 .access-state h1 { margin: 0; font-size: 42px; letter-spacing: -.06em; }
 .access-state .button { margin-top: 22px; }
 
-.workspace { min-height: 74vh; padding: 38px 0 100px; background: #f0f5f8; }
+.workspace { min-height: 74vh; padding: 0 0 100px; background: #f0f5f8; }
+.my-page-heading { display: flex; min-height: 174px; padding-top: 46px; padding-bottom: 38px; align-items: flex-end; justify-content: space-between; }
+.my-page-heading small { color: var(--forest-2); font-size: 9px; font-weight: 900; letter-spacing: .18em; }
+.my-page-heading h1 { margin: 9px 0 0; font-size: 42px; letter-spacing: -.065em; }
+.my-page-heading p { margin: 0 0 5px; color: var(--muted); font-size: 11px; }
+.my-page-heading p strong { color: var(--ink); }
 .workspace-shell { display: flex; flex-direction: column; gap: 24px; }
 .workspace-top { display: flex; min-height: 54px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .workspace-top > div { display: flex; align-items: center; gap: 12px; }
@@ -1482,6 +1487,21 @@ button:focus-visible {
 .dashboard-hero h1 { margin: 0; font-size: clamp(34px, 4.5vw, 56px); letter-spacing: -.07em; }
 .dashboard-hero > div > span { display: block; margin-top: 12px; color: rgba(255,255,255,.6); font-size: 13px; }
 .dashboard-hero .button { min-width: 180px; justify-content: space-between; color: var(--ink); }
+.author-role-panel { display: grid; grid-template-columns: 160px 150px 1fr; background: white; border: 1px solid var(--line); }
+.author-role-tab, .author-task-count { display: flex; min-height: 72px; padding: 0 20px; align-items: center; border-right: 1px solid var(--line); }
+.author-role-tab { flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; }
+.author-role-tab span { color: var(--muted); font-size: 9px; font-weight: 800; }
+.author-role-tab strong { color: var(--forest-2); font-size: 15px; }
+.author-task-count { justify-content: center; gap: 8px; background: var(--ink); color: white; }
+.author-task-count span { font-size: 10px; font-weight: 800; }
+.author-task-count strong { color: #80d9fb; font-size: 26px; }
+.author-task-count small { color: rgba(255, 255, 255, .58); font-size: 9px; }
+.author-role-panel nav { display: grid; grid-template-columns: repeat(5, 1fr); }
+.author-role-panel nav button { display: flex; min-height: 72px; padding: 10px 13px; align-items: center; justify-content: space-between; gap: 8px; border-right: 1px solid var(--line); color: var(--muted); text-align: left; font-size: 10px; font-weight: 750; }
+.author-role-panel nav button:last-child { border-right: 0; }
+.author-role-panel nav button strong { color: var(--ink); font-size: 14px; }
+.author-role-panel nav button.active { background: var(--forest-2); color: white; }
+.author-role-panel nav button.active strong { color: #80d9fb; }
 .reviewer-hero { background: #1e619a; }
 .editor-hero { background: #1e2e55; }
 .blind-badge { display: flex; align-items: center; gap: 14px; }
@@ -2053,6 +2073,7 @@ footer button { color: inherit; }
   .shell { width: min(100% - 36px, 760px); }
   .jams-utility nav > * { padding: 0 9px; font-size: 9px; }
   .jams-utility nav > *:first-child, .jams-utility nav > *:nth-child(2) { display: none; }
+  .jams-utility .utility-user { display: none; }
   .jams-masthead { min-height: 68px; }
   .jams-brand { gap: 8px; }
   .jams-brand .brand-mark { width: 31px; height: 31px; }
@@ -2170,6 +2191,8 @@ footer button { color: inherit; }
   .admin-metrics { grid-template-columns: repeat(4, 1fr); }
   .board-admin-grid { grid-template-columns: 1fr; }
   .board-editor-card { position: static; }
+  .author-role-panel { grid-template-columns: 1fr 1fr; }
+  .author-role-panel nav { grid-column: 1 / -1; border-top: 1px solid var(--line); }
 }
 
 @media (max-width: 760px) {
@@ -2179,6 +2202,9 @@ footer button { color: inherit; }
   .community-side-nav h2 { grid-column: 1 / -1; }
   .journal-information-nav { grid-template-columns: 1fr 1fr; }
   .journal-information-placeholder { min-height: 300px; padding: 48px 24px; }
+  .my-page-heading { min-height: 150px; padding-top: 34px; padding-bottom: 30px; align-items: flex-start; flex-direction: column; justify-content: flex-end; gap: 14px; }
+  .my-page-heading h1 { font-size: 36px; }
+  .author-role-panel nav { overflow-x: auto; grid-template-columns: repeat(5, minmax(140px, 1fr)); }
   .community-heading h2 { font-size: 24px; }
   .board-table th:first-child, .board-table td:first-child { display: none; }
   .board-table th:nth-child(2), .board-table td:nth-child(2) { width: auto; }
@@ -2188,6 +2214,9 @@ footer button { color: inherit; }
 
 /* 건강체력연구소 연결 페이지와 관리자 진입 */
 .jams-utility .admin-login-link { background: rgba(255, 255, 255, .1); color: white; font-weight: 850; }
+.jams-utility .utility-user { background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .82); font-weight: 750; }
+.jams-utility .my-page-link { background: #80d9fb; color: var(--ink); font-weight: 900; letter-spacing: .04em; }
+.jams-primary-nav .my-page-nav-link { color: var(--forest-2); font-weight: 900; }
 .assignment-heading { display: flex; margin-bottom: 16px; align-items: center; justify-content: space-between; }
 .assignment-heading h3 { margin: 0; }
 .assignment-heading strong { padding: 5px 8px; background: var(--mint); color: var(--forest-2); font-size: 10px; }

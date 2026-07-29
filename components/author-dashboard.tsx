@@ -8,6 +8,7 @@ import {
   getErrorMessage,
   splitKeywords,
   type Manuscript,
+  type ManuscriptStatus,
   type Profile,
 } from "@/lib/journal";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -16,11 +17,20 @@ import { uploadJournalFile } from "@/lib/supabase/files";
 type Coauthor = { nameKo: string; nameEn: string; affiliationKo: string; affiliationEn: string; email: string };
 type AuthorDecision = { decision: keyof typeof DECISION_LABELS; author_letter: string; round_no: number; decided_at: string };
 type AuthorHistory = { from_status: keyof typeof STATUS_LABELS | null; to_status: keyof typeof STATUS_LABELS; note: string | null; changed_at: string };
+type ManuscriptFilter = "all" | "received" | "review" | "revision" | "final";
+
+const FILTER_STATUSES: Record<Exclude<ManuscriptFilter, "all">, ManuscriptStatus[]> = {
+  received: ["SUBMITTED", "RECEIVED", "FORMAT_REVIEW"],
+  review: ["REVIEWER_SELECTION", "UNDER_REVIEW", "RE_REVIEW"],
+  revision: ["REVISION_REQUESTED", "REVISION_SUBMITTED"],
+  final: ["ACCEPTED", "ACCEPT_WITH_REVISIONS", "FINAL_ACCEPTED", "PUBLISHED"],
+};
 
 export function AuthorDashboard({ profile }: { profile: Profile }) {
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubmission, setShowSubmission] = useState(false);
+  const [filter, setFilter] = useState<ManuscriptFilter>("all");
   const [fileTarget, setFileTarget] = useState<{ manuscript: Manuscript; mode: "draft" | "revision" | "final" } | null>(null);
   const [detail, setDetail] = useState<{ manuscript: Manuscript; decisions: AuthorDecision[]; history: AuthorHistory[] } | null>(null);
 
@@ -55,12 +65,32 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
     revision: manuscripts.filter((item) => item.status === "REVISION_REQUESTED").length,
     accepted: manuscripts.filter((item) => ["ACCEPTED", "ACCEPT_WITH_REVISIONS", "FINAL_ACCEPTED", "PUBLISHED"].includes(item.status)).length,
   };
+  const tasks = manuscripts.filter((item) => ["DRAFT", "REVISION_REQUESTED", "ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(item.status)).length;
+  const filteredManuscripts = filter === "all" ? manuscripts : manuscripts.filter((item) => FILTER_STATUSES[filter].includes(item.status));
+  const statusFilters: { id: ManuscriptFilter; label: string; count: number }[] = [
+    { id: "all", label: "논문 총괄현황", count: counts.all },
+    { id: "received", label: "논문 접수 현황", count: manuscripts.filter((item) => FILTER_STATUSES.received.includes(item.status)).length },
+    { id: "review", label: "논문 심사 진행 현황", count: manuscripts.filter((item) => FILTER_STATUSES.review.includes(item.status)).length },
+    { id: "revision", label: "수정 논문 제출 현황", count: manuscripts.filter((item) => FILTER_STATUSES.revision.includes(item.status)).length },
+    { id: "final", label: "최종 논문 제출 현황", count: manuscripts.filter((item) => FILTER_STATUSES.final.includes(item.status)).length },
+  ];
 
   return (
     <div className="dashboard-stack">
       <section className="dashboard-hero">
-        <div><p>AUTHOR DASHBOARD</p><h1>{profile.full_name || "저자"}님의 투고현황</h1><span>논문 진행상태와 편집결정을 한눈에 확인하세요.</span></div>
+        <div><p>MY PAGE · AUTHOR</p><h1>{profile.full_name || "저자"}님의 투고현황</h1><span>논문 진행상태와 편집결정을 한눈에 확인하세요.</span></div>
         <button className="button button-lime" type="button" onClick={() => setShowSubmission(true)}>신규 논문 투고 <span>＋</span></button>
+      </section>
+      <section className="author-role-panel" aria-label="투고자 논문 관리 메뉴">
+        <div className="author-role-tab"><span>유형 선택</span><strong>투고자</strong></div>
+        <div className="author-task-count"><span>나의 할 일</span><strong>{tasks}</strong><small>건</small></div>
+        <nav>
+          {statusFilters.map((item) => (
+            <button className={filter === item.id ? "active" : ""} type="button" onClick={() => setFilter(item.id)} key={item.id}>
+              <span>{item.label}</span><strong>{item.count}</strong>
+            </button>
+          ))}
+        </nav>
       </section>
       <section className="metric-grid" aria-label="투고현황 요약">
         <Metric label="전체 투고" value={counts.all} />
@@ -69,12 +99,14 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
         <Metric label="게재 단계" value={counts.accepted} tone="success" />
       </section>
       <section className="workspace-card">
-        <div className="card-heading"><div><p>MY MANUSCRIPTS</p><h2>내 투고논문</h2></div><span>{manuscripts.length}건</span></div>
+        <div className="card-heading"><div><p>MY MANUSCRIPTS</p><h2>내 투고논문</h2></div><span>{filteredManuscripts.length}건</span></div>
         {loading ? <div className="empty-state">투고현황을 불러오는 중입니다.</div> : manuscripts.length === 0 ? (
           <div className="empty-state"><strong>아직 투고한 논문이 없습니다.</strong><p>신규 논문 투고 버튼에서 첫 원고를 접수해 주세요.</p></div>
+        ) : filteredManuscripts.length === 0 ? (
+          <div className="empty-state"><strong>이 단계에 해당하는 논문이 없습니다.</strong><p>다른 진행단계를 선택해 투고현황을 확인해 주세요.</p></div>
         ) : (
           <div className="data-table-wrap"><table className="data-table"><thead><tr><th>논문번호</th><th>논문제목</th><th>투고일</th><th>현재상태</th><th>업무</th></tr></thead><tbody>
-            {manuscripts.map((manuscript) => (
+            {filteredManuscripts.map((manuscript) => (
               <tr key={manuscript.id}>
                 <td><b>{manuscript.manuscript_code ?? "임시저장"}</b></td>
                 <td><button className="table-title" type="button" onClick={() => void openDetail(manuscript)}>{manuscript.title_ko}</button><small>{manuscript.title_en}</small></td>
