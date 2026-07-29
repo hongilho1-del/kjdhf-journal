@@ -106,6 +106,23 @@ test("connects JAMS-style submission, e-Journal, KCI similarity, and anonymous r
   assert.doesNotMatch(migration, /editor_comments/);
 });
 
+test("new submissions use a full-page ethics-first authoring wizard", async () => {
+  const [submission, author] = await Promise.all([
+    readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  for (const label of ["연구윤리서약", "논문·초록 입력", "저자정보", "원고파일", "단독저자", "공동저자", "교신저자로 지정"]) {
+    assert.match(submission, new RegExp(label));
+  }
+  assert.match(submission, /Object\.values\(ethics\)\.every\(Boolean\)/);
+  assert.match(submission, /is_corresponding: index === correspondingIndex/);
+  assert.match(submission, /#online-submission\?mode=new&step=ethics/);
+  assert.doesNotMatch(submission, /\bSubmissionModal\b/);
+  assert.match(author, /openNewSubmissionPage/);
+  assert.match(author, /online-submission\?mode=new&step=ethics/);
+  assert.doesNotMatch(author, /showSubmission|\bSubmissionModal\b/);
+});
+
 test("ships both supplied logos with the darker Kongju palette", async () => {
   const [journalLogo, transparentLogo, instituteLogo, css, app] = await Promise.all([
     stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),

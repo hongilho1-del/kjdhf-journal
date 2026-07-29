@@ -6,7 +6,6 @@ import {
   STATUS_LABELS,
   formatDate,
   getErrorMessage,
-  splitKeywords,
   type Manuscript,
   type ManuscriptStatus,
   type Profile,
@@ -14,7 +13,6 @@ import {
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { uploadJournalFile } from "@/lib/supabase/files";
 
-type Coauthor = { nameKo: string; nameEn: string; affiliationKo: string; affiliationEn: string; email: string };
 type AuthorDecision = { decision: keyof typeof DECISION_LABELS; author_letter: string; round_no: number; decided_at: string };
 type AuthorHistory = { from_status: keyof typeof STATUS_LABELS | null; to_status: keyof typeof STATUS_LABELS; note: string | null; changed_at: string };
 type ManuscriptFilter = "all" | "received" | "review" | "revision" | "final";
@@ -23,6 +21,11 @@ export function openAuthorReviewResult(manuscriptId: string) {
   const url = new URL(window.location.href);
   url.hash = `author-review-result?manuscript=${encodeURIComponent(manuscriptId)}`;
   window.open(url.toString(), "_blank", "noopener,noreferrer");
+}
+
+export function openNewSubmissionPage() {
+  window.location.hash = "online-submission?mode=new&step=ethics";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 const FILTER_STATUSES: Record<Exclude<ManuscriptFilter, "all">, ManuscriptStatus[]> = {
@@ -35,7 +38,6 @@ const FILTER_STATUSES: Record<Exclude<ManuscriptFilter, "all">, ManuscriptStatus
 export function AuthorDashboard({ profile }: { profile: Profile }) {
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showSubmission, setShowSubmission] = useState(false);
   const [filter, setFilter] = useState<ManuscriptFilter>("all");
   const [fileTarget, setFileTarget] = useState<{ manuscript: Manuscript; mode: "draft" | "revision" | "final" } | null>(null);
   const [detail, setDetail] = useState<{ manuscript: Manuscript; decisions: AuthorDecision[]; history: AuthorHistory[] } | null>(null);
@@ -85,7 +87,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
     <div className="dashboard-stack">
       <section className="dashboard-hero">
         <div><p>MY PAGE · AUTHOR</p><h1>{profile.full_name || "저자"}님의 투고현황</h1><span>논문 진행상태와 편집결정을 한눈에 확인하세요.</span></div>
-        <button className="button button-lime" type="button" onClick={() => setShowSubmission(true)}>신규 논문 투고 <span>＋</span></button>
+        <button className="button button-lime" type="button" onClick={openNewSubmissionPage}>신규 논문 투고 <span>＋</span></button>
       </section>
       <section className="author-role-panel" aria-label="투고자 논문 관리 메뉴">
         <div className="author-role-tab"><span>유형 선택</span><strong>투고자</strong></div>
@@ -130,7 +132,6 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
           </tbody></table></div>
         )}
       </section>
-      {showSubmission && <SubmissionModal profile={profile} onClose={() => setShowSubmission(false)} onComplete={loadManuscripts} />}
       {fileTarget && <FileSubmissionModal {...fileTarget} onClose={() => setFileTarget(null)} onComplete={loadManuscripts} />}
       {detail && <AuthorDetailModal {...detail} onClose={() => setDetail(null)} />}
     </div>
@@ -139,128 +140,6 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
 
 function Metric({ label, value, tone = "default" }: { label: string; value: number; tone?: string }) {
   return <article className={`metric-card metric-${tone}`}><span>{label}</span><strong>{String(value).padStart(2, "0")}</strong><i /></article>;
-}
-
-export function SubmissionModal({ profile, onClose, onComplete }: { profile: Profile; onClose: () => void; onComplete: () => Promise<void> }) {
-  const [coauthors, setCoauthors] = useState<Coauthor[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    const original = values.get("originalFile");
-    const anonymized = values.get("anonymizedFile");
-    if (!(original instanceof File) || !original.size || !(anonymized instanceof File) || !anonymized.size) {
-      setMessage("원고파일과 익명화 원고를 모두 선택해 주세요.");
-      return;
-    }
-    setBusy(true);
-    setMessage("논문 정보를 저장하고 있습니다…");
-    try {
-      const supabase = getSupabaseClient();
-      const { data: manuscript, error: manuscriptError } = await supabase.from("manuscripts").insert({
-        title_ko: String(values.get("titleKo")),
-        title_en: String(values.get("titleEn")),
-        abstract_ko: String(values.get("abstractKo")),
-        abstract_en: String(values.get("abstractEn")),
-        keywords_ko: splitKeywords(String(values.get("keywordsKo"))),
-        keywords_en: splitKeywords(String(values.get("keywordsEn"))),
-        research_field: String(values.get("researchField")),
-        ethics_confirmed: values.get("ethics") === "on",
-        conflict_of_interest_confirmed: values.get("conflict") === "on",
-        copyright_agreed: values.get("copyright") === "on",
-      }).select().single();
-      if (manuscriptError) throw manuscriptError;
-
-      const corresponding = {
-        manuscript_id: manuscript.id,
-        user_id: profile.id,
-        name_ko: String(values.get("correspondingName")),
-        name_en: String(values.get("correspondingNameEn") || "") || null,
-        affiliation_ko: String(values.get("affiliation")),
-        affiliation_en: String(values.get("affiliationEn") || "") || null,
-        email: String(values.get("correspondingEmail")),
-        is_corresponding: true,
-        sort_order: 1,
-      };
-      const authorRows = [corresponding, ...coauthors.map((author, index) => ({
-        manuscript_id: manuscript.id,
-        user_id: null,
-        name_ko: author.nameKo,
-        name_en: author.nameEn || null,
-        affiliation_ko: author.affiliationKo,
-        affiliation_en: author.affiliationEn || null,
-        email: author.email,
-        is_corresponding: false,
-        sort_order: index + 2,
-      }))];
-      const { error: authorError } = await supabase.from("authors").insert(authorRows);
-      if (authorError) throw authorError;
-
-      setMessage("원고파일을 안전하게 업로드하고 있습니다…");
-      await uploadJournalFile(original, manuscript.id, "ORIGINAL", 1);
-      await uploadJournalFile(anonymized, manuscript.id, "ANONYMIZED", 1);
-      const { error: submitError } = await supabase.rpc("submit_manuscript", { target_manuscript_id: manuscript.id });
-      if (submitError) throw submitError;
-      await onComplete();
-      onClose();
-    } catch (error) {
-      setMessage(`${getErrorMessage(error)} 임시저장 원고는 대시보드에서 이어서 제출할 수 있습니다.`);
-      await onComplete();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function updateCoauthor(index: number, key: keyof Coauthor, value: string) {
-    setCoauthors((current) => current.map((author, authorIndex) => authorIndex === index ? { ...author, [key]: value } : author));
-  }
-
-  return (
-    <div className="modal-backdrop modal-scroll"><section className="submission-modal" role="dialog" aria-modal="true" aria-labelledby="submission-title">
-      <button className="modal-close" type="button" onClick={onClose} disabled={busy}>×</button>
-      <p className="panel-eyebrow">NEW SUBMISSION</p><h2 id="submission-title">신규 논문 투고</h2>
-      <p className="panel-description">저자정보와 익명 원고는 분리 저장됩니다. 원고 본문에서 저자를 식별할 수 있는 내용을 제거해 주세요.</p>
-      <form className="form-grid submission-form" onSubmit={handleSubmit}>
-        <h3 className="form-section-title wide"><span>01</span> 논문 기본정보</h3>
-        <label className="wide">논문제목(국문)<input name="titleKo" required /></label>
-        <label className="wide">논문제목(영문)<input name="titleEn" required /></label>
-        <label className="wide">국문초록<textarea name="abstractKo" rows={5} required /></label>
-        <label className="wide">영문초록<textarea name="abstractEn" rows={5} required /></label>
-        <label>국문 핵심어<input name="keywordsKo" placeholder="쉼표로 구분" required /></label>
-        <label>영문 Keywords<input name="keywordsEn" placeholder="Comma separated" required /></label>
-        <label className="wide">연구분야<select name="researchField" required defaultValue=""><option value="" disabled>선택해 주세요</option><option>디지털 헬스</option><option>건강체력 측정·평가</option><option>운동생리학</option><option>운동처방·재활</option><option>학교·지역사회 건강</option><option>기타</option></select></label>
-
-        <h3 className="form-section-title wide"><span>02</span> 교신저자·공동저자</h3>
-        <label>교신저자 이름(국문)<input name="correspondingName" defaultValue={profile.full_name} required /></label>
-        <label>교신저자 이름(영문)<input name="correspondingNameEn" /></label>
-        <label>소속(국문)<input name="affiliation" defaultValue={profile.affiliation ?? ""} required /></label>
-        <label>소속(영문)<input name="affiliationEn" /></label>
-        <label className="wide">교신저자 이메일<input name="correspondingEmail" type="email" defaultValue={profile.email} required /></label>
-        {coauthors.map((author, index) => <div className="coauthor-block wide" key={index}>
-          <div><strong>공동저자 {index + 1}</strong><button type="button" onClick={() => setCoauthors((current) => current.filter((_, itemIndex) => itemIndex !== index))}>삭제</button></div>
-          <label>이름(국문)<input value={author.nameKo} onChange={(event) => updateCoauthor(index, "nameKo", event.target.value)} required /></label>
-          <label>이름(영문)<input value={author.nameEn} onChange={(event) => updateCoauthor(index, "nameEn", event.target.value)} /></label>
-          <label>소속(국문)<input value={author.affiliationKo} onChange={(event) => updateCoauthor(index, "affiliationKo", event.target.value)} required /></label>
-          <label>소속(영문)<input value={author.affiliationEn} onChange={(event) => updateCoauthor(index, "affiliationEn", event.target.value)} /></label>
-          <label className="wide">이메일<input type="email" value={author.email} onChange={(event) => updateCoauthor(index, "email", event.target.value)} required /></label>
-        </div>)}
-        <button className="secondary-button wide add-author" type="button" onClick={() => setCoauthors((current) => [...current, { nameKo: "", nameEn: "", affiliationKo: "", affiliationEn: "", email: "" }])}>＋ 공동저자 추가</button>
-
-        <h3 className="form-section-title wide"><span>03</span> 파일·동의</h3>
-        <label>원고파일<input name="originalFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>저자정보가 포함된 편집용 원고</small></label>
-        <label>익명화 원고<input name="anonymizedFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>심사위원에게 제공되는 비식별 원고</small></label>
-        <div className="consent-list wide">
-          <label><input name="ethics" type="checkbox" required /> 연구윤리 준수 및 중복투고 금지를 확인합니다.</label>
-          <label><input name="conflict" type="checkbox" required /> 이해상충 여부를 확인하고 필요한 내용을 고지했습니다.</label>
-          <label><input name="copyright" type="checkbox" required /> 게재 시 저작권 및 이용조건에 동의합니다.</label>
-        </div>
-        <div className="form-actions wide"><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"}</button>{message && <span role="status">{message}</span>}</div>
-      </form>
-    </section></div>
-  );
 }
 
 export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: { manuscript: Manuscript; mode: "draft" | "revision" | "final"; onClose: () => void; onComplete: () => Promise<void> }) {
