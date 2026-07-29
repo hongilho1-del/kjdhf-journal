@@ -43,6 +43,8 @@ export function JournalInformation({
           <nav aria-label="현재 위치">
             <button type="button" onClick={onBackHome}>홈</button>
             <span>›</span>
+            <span>학회지 안내</span>
+            <span>›</span>
             <strong>{copy.label}</strong>
           </nav>
         </div>

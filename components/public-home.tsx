@@ -119,7 +119,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
         <div className="shell jams-about-grid">
           <div className="jams-about-title">
             <small>ABOUT THE JOURNAL</small>
-            <h2>학회지 소개</h2>
+            <h2>학회지 안내</h2>
             <div className="jams-about-logo">
               {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
               <img src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />

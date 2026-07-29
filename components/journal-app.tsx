@@ -223,7 +223,7 @@ export function JournalApp() {
               <button type="button" onClick={() => openHomeSection("journal-about")}>학회</button>
               <button type="button" onClick={() => openEJournal("search")}>e-Journal</button>
               <button type="button" onClick={openSubmission}>논문투고</button>
-              <button type="button" onClick={() => openInformation("submission-guidelines")}>심사안내</button>
+              <button type="button" onClick={() => openInformation("submission-guidelines")}>학회지 안내</button>
               <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
               <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
               {session && <button className="my-page-nav-link" type="button" onClick={openMyPage}>MY PAGE</button>}
@@ -234,7 +234,7 @@ export function JournalApp() {
                 <button type="button" onClick={() => openHomeSection("journal-about")}>학회</button>
                 <button type="button" onClick={() => openEJournal("search")}>e-Journal</button>
                 <button type="button" onClick={openSubmission}>논문투고</button>
-                <button type="button" onClick={() => openInformation("submission-guidelines")}>심사안내</button>
+                <button type="button" onClick={() => openInformation("submission-guidelines")}>학회지 안내</button>
                 <button type="button" onClick={() => openBoard("NOTICE")}>공지사항</button>
                 <button type="button" onClick={() => openBoard("EVENT")}>학회행사</button>
                 {session && <button type="button" onClick={openMyPage}>MY PAGE</button>}

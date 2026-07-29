@@ -192,7 +192,7 @@ test("admin can edit review-information pages without exposing them as notices",
     readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
   ]);
-  assert.match(editor, /profile\.role === "ADMIN"[^\n]+심사안내 관리/);
+  assert.match(editor, /profile\.role === "ADMIN"[^\n]+학회지 안내 관리/);
   assert.match(editor, /<JournalPageManagement profile=\{profile\}/);
   assert.match(management, /from\("board_posts"\).*update/s);
   assert.match(management, /from\("board_posts"\).*insert/s);
@@ -202,6 +202,25 @@ test("admin can edit review-information pages without exposing them as notices",
   assert.match(board, /isJournalPagePost/);
   assert.match(rls, /board_posts_admin_update/);
   assert.match(rls, /using \(public\.is_admin\(\)\) with check \(public\.is_admin\(\)\)/);
+});
+
+test("public boards avoid admin function errors and journal information uses one label", async () => {
+  const [community, app, home, information, management, policy] = await Promise.all([
+    readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729200000_fix_public_board_read_policy.sql", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(community, /permission denied|notice-box/);
+  assert.match(app, /학회지 안내/);
+  assert.match(home, /학회지 안내/);
+  assert.match(information, /학회지 안내/);
+  assert.match(management, /학회지 안내 페이지/);
+  assert.match(policy, /using \(is_published\)/);
+  assert.match(policy, /board_posts_admin_read/);
+  assert.doesNotMatch(policy.match(/board_posts_public_read[\s\S]*?;/)?.[0] ?? "", /is_admin/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {

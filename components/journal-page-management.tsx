@@ -71,7 +71,7 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
   return (
     <div className="journal-page-admin-grid">
       <section className="workspace-card journal-page-admin-list">
-        <div className="card-heading"><div><p>REVIEW INFORMATION</p><h2>심사안내 페이지</h2></div><span>{pages.length} / 4</span></div>
+        <div className="card-heading"><div><p>JOURNAL INFORMATION</p><h2>학회지 안내 페이지</h2></div><span>{pages.length} / 4</span></div>
         <nav>
           {journalInformationNavigation.map((item) => {
             const saved = pages.find((page) => page.title === getJournalPageStorageTitle(item.id));

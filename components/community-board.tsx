@@ -24,12 +24,10 @@ export function CommunityBoard({
   const [selected, setSelected] = useState<BoardPost | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
 
   const loadPosts = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setLoading(false);
-      setMessage("게시판 연결 정보가 설정되지 않았습니다.");
       return;
     }
     setLoading(true);
@@ -42,12 +40,10 @@ export function CommunityBoard({
       .order("is_pinned", { ascending: false })
       .order("published_at", { ascending: false });
     if (error) {
-      setMessage(error.message);
       setPosts([]);
     } else {
       const nextPosts = data ?? [];
       setPosts(nextPosts);
-      setMessage("");
       setSelected(initialPostId ? nextPosts.find((post) => post.id === initialPostId) ?? null : null);
     }
     setLoading(false);
@@ -100,7 +96,6 @@ export function CommunityBoard({
             <>
               <div className="community-heading"><div><small>KJDHF COMMUNITY</small><h2>{BOARD_LABELS[category]}</h2></div><span>총 {filteredPosts.length}건</span></div>
               <div className="board-search"><label><span className="sr-only">게시물 검색</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="제목 또는 내용 검색" /></label><button type="button">검색</button></div>
-              {message && <div className="notice-box" role="status">{message}</div>}
               {loading ? <div className="empty-state">게시물을 불러오는 중입니다.</div> : filteredPosts.length === 0 ? <div className="empty-state"><strong>등록된 게시물이 없습니다.</strong></div> : (
                 <div className="board-table-wrap">
                   <table className="board-table">
