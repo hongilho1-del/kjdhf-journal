@@ -34,16 +34,17 @@ test("server-renders the Korean digital health and fitness journal", async () =>
 });
 
 test("journal information links use the supplied logo and open four dedicated views", async () => {
-  const [home, information, app] = await Promise.all([
+  const [home, information, pages, app] = await Promise.all([
     readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal-pages.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(home, /logos\/kjdhf-logo\.png/);
   assert.doesNotMatch(home, /jams-about-mark/);
   for (const page of ["submission-guidelines", "editorial-board", "research-ethics", "manuscript-template"]) {
     assert.match(home, new RegExp(page));
-    assert.match(information, new RegExp(page));
+    assert.match(pages, new RegExp(page));
   }
   assert.match(app, /isJournalInformationPage\(hashPage\)/);
   assert.match(app, /<JournalInformation page=\{view\}/);
@@ -69,15 +70,43 @@ test("authenticated users get a My Page with personal manuscript management", as
 });
 
 test("ships both supplied logos with the darker Kongju palette", async () => {
-  const [journalLogo, instituteLogo, css] = await Promise.all([
+  const [journalLogo, transparentLogo, instituteLogo, css, app] = await Promise.all([
     stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),
+    readFile(new URL("../public/logos/kjdhf-logo-transparent.png", import.meta.url)),
     stat(new URL("../public/logos/health-fitness-institute-logo.png", import.meta.url)),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
   ]);
   assert.ok(journalLogo.size > 10_000);
+  assert.ok(transparentLogo.length > 10_000);
+  assert.equal(transparentLogo[25], 6, "footer logo must be an RGBA PNG");
   assert.ok(instituteLogo.size > 10_000);
   assert.match(css, /--ink:\s*#061a38/i);
   assert.match(css, /--forest:\s*#082b5d/i);
+  assert.match(app, /logos\/kjdhf-logo-transparent\.png/);
+  assert.doesNotMatch(css.match(/\.jams-footer \.footer-brand[^}]+}/)?.[0] ?? "", /background:\s*white/i);
+});
+
+test("admin can edit review-information pages without exposing them as notices", async () => {
+  const [editor, management, information, publicHome, board, community, rls] = await Promise.all([
+    readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/board-management.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(editor, /profile\.role === "ADMIN"[^\n]+심사안내 관리/);
+  assert.match(editor, /<JournalPageManagement profile=\{profile\}/);
+  assert.match(management, /from\("board_posts"\).*update/s);
+  assert.match(management, /from\("board_posts"\).*insert/s);
+  assert.match(information, /getJournalPageStorageTitle\(page\)/);
+  assert.match(publicHome, /KJDHF_PAGE:/);
+  assert.match(community, /KJDHF_PAGE:/);
+  assert.match(board, /isJournalPagePost/);
+  assert.match(rls, /board_posts_admin_update/);
+  assert.match(rls, /using \(public\.is_admin\(\)\) with check \(public\.is_admin\(\)\)/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {

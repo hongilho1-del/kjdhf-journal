@@ -7,11 +7,12 @@ import { AuthPanel } from "@/components/auth-panel";
 import { CommunityBoard } from "@/components/community-board";
 import { EditorDashboard } from "@/components/editor-dashboard";
 import { HealthFitnessInstitute } from "@/components/health-fitness-institute";
-import { isJournalInformationPage, JournalInformation, type JournalInformationPage } from "@/components/journal-information";
+import { JournalInformation } from "@/components/journal-information";
 import { ProfilePanel } from "@/components/profile-panel";
 import { PublicHome } from "@/components/public-home";
 import { ReviewerDashboard } from "@/components/reviewer-dashboard";
 import { ROLE_LABELS, type BoardCategory, type Profile } from "@/lib/journal";
+import { isJournalInformationPage, type JournalInformationPage } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type View = "home" | "institute" | "notice" | "events" | "dashboard" | "profile" | JournalInformationPage;
@@ -222,7 +223,7 @@ export function JournalApp() {
         <div className="shell jams-footer-grid">
           <button className="brand footer-brand brand-button" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
-            <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
+            <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhf-logo-transparent.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
           </button>
           <div className="jams-footer-info">
             <p>국립공주대학교 건강체력연구소 · 한국 디지털 건강체력학회지 편집국</p>

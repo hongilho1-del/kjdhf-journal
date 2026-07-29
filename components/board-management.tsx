@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { formatDate, getErrorMessage, type BoardCategory, type BoardPost } from "@/lib/journal";
+import { isJournalPagePost } from "@/lib/journal-pages";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
 const emptyCategory: BoardCategory = "NOTICE";
@@ -23,7 +24,7 @@ export function BoardManagement() {
   const loadPosts = useCallback(async () => {
     const { data, error } = await getSupabaseClient().from("board_posts").select("*").order("created_at", { ascending: false });
     if (error) setMessage(error.message);
-    else setPosts(data ?? []);
+    else setPosts((data ?? []).filter((post) => !isJournalPagePost(post)));
   }, []);
 
   useEffect(() => {

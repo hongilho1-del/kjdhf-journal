@@ -38,6 +38,7 @@ export function CommunityBoard({
       .select("*")
       .eq("category", category)
       .eq("is_published", true)
+      .not("title", "like", "KJDHF_PAGE:%")
       .order("is_pinned", { ascending: false })
       .order("published_at", { ascending: false });
     if (error) {

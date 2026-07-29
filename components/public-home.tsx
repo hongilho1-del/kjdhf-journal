@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { JournalInformationPage } from "@/components/journal-information";
 import { formatDate, type BoardCategory, type BoardPost } from "@/lib/journal";
+import type { JournalInformationPage } from "@/lib/journal-pages";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -26,7 +26,7 @@ export function PublicHome({ onEnter, onOpenBoard, onOpenInformation }: { onEnte
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    void getSupabaseClient().from("board_posts").select("*").eq("is_published", true).order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(12).then(({ data }) => {
+    void getSupabaseClient().from("board_posts").select("*").eq("is_published", true).not("title", "like", "KJDHF_PAGE:%").order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(12).then(({ data }) => {
       if (data) setPosts(data);
     });
   }, []);

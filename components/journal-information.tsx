@@ -1,40 +1,15 @@
 "use client";
 
-export const journalInformationNavigation = [
-  { id: "submission-guidelines", label: "논문투고 규정" },
-  { id: "editorial-board", label: "편집위원회" },
-  { id: "research-ethics", label: "연구 윤리위원회" },
-  { id: "manuscript-template", label: "논문 양식 다운로드" },
-] as const;
+import { useEffect, useState } from "react";
+import {
+  getJournalPageDefinition,
+  getJournalPageStorageTitle,
+  journalInformationNavigation,
+  type JournalInformationPage,
+} from "@/lib/journal-pages";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-export type JournalInformationPage = (typeof journalInformationNavigation)[number]["id"];
-
-const PAGE_COPY: Record<JournalInformationPage, { eyebrow: string; title: string; description: string }> = {
-  "submission-guidelines": {
-    eyebrow: "SUBMISSION GUIDELINES",
-    title: "논문투고 규정",
-    description: "투고 자격, 원고 작성, 제출 절차에 관한 규정을 안내하는 페이지입니다.",
-  },
-  "editorial-board": {
-    eyebrow: "EDITORIAL BOARD",
-    title: "편집위원회",
-    description: "편집위원회 구성과 운영 내용을 안내하는 페이지입니다.",
-  },
-  "research-ethics": {
-    eyebrow: "RESEARCH ETHICS COMMITTEE",
-    title: "연구 윤리위원회",
-    description: "연구윤리위원회 구성과 연구윤리 관련 내용을 안내하는 페이지입니다.",
-  },
-  "manuscript-template": {
-    eyebrow: "MANUSCRIPT TEMPLATE",
-    title: "논문 양식 다운로드",
-    description: "한국 디지털 건강체력학회지 투고용 논문 양식을 제공하는 페이지입니다.",
-  },
-};
-
-export function isJournalInformationPage(value: string): value is JournalInformationPage {
-  return journalInformationNavigation.some((item) => item.id === value);
-}
+export { isJournalInformationPage, journalInformationNavigation, type JournalInformationPage } from "@/lib/journal-pages";
 
 export function JournalInformation({
   page,
@@ -45,18 +20,30 @@ export function JournalInformation({
   onNavigate: (page: JournalInformationPage) => void;
   onBackHome: () => void;
 }) {
-  const copy = PAGE_COPY[page];
+  const copy = getJournalPageDefinition(page);
+  const [contentByPage, setContentByPage] = useState<Partial<Record<JournalInformationPage, string>>>({});
+  const content = contentByPage[page] ?? "";
+  const loading = isSupabaseConfigured && contentByPage[page] === undefined;
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let active = true;
+    void getSupabaseClient().from("board_posts").select("content").eq("title", getJournalPageStorageTitle(page)).eq("is_published", true).maybeSingle().then(({ data }) => {
+      if (active) setContentByPage((current) => ({ ...current, [page]: data?.content ?? "" }));
+    });
+    return () => { active = false; };
+  }, [page]);
 
   return (
     <section className="journal-information-page">
       <div className="community-hero">
         <div className="shell">
           <p>ABOUT THE JOURNAL</p>
-          <h1>{copy.title}</h1>
+          <h1>{copy.label}</h1>
           <nav aria-label="현재 위치">
             <button type="button" onClick={onBackHome}>홈</button>
             <span>›</span>
-            <strong>{copy.title}</strong>
+            <strong>{copy.label}</strong>
           </nav>
         </div>
       </div>
@@ -73,16 +60,16 @@ export function JournalInformation({
 
         <div className="journal-information-content">
           <div className="community-heading">
-            <div><small>{copy.eyebrow}</small><h2>{copy.title}</h2></div>
+            <div><small>{copy.eyebrow}</small><h2>{copy.label}</h2></div>
           </div>
-          <div className="journal-information-placeholder">
+          {content ? <article className="journal-information-body">{content}</article> : <div className="journal-information-placeholder">
             <span>CONTENT PREPARING</span>
-            <h3>내용을 준비하고 있습니다.</h3>
-            <p>{copy.description}<br />전달해 주시는 최종 내용으로 이 페이지를 업데이트하겠습니다.</p>
+            <h3>{loading ? "내용을 불러오고 있습니다." : "내용을 준비하고 있습니다."}</h3>
+            <p>{copy.description}<br />관리자가 내용을 등록하면 이 페이지에 바로 표시됩니다.</p>
             {page === "manuscript-template" && (
               <button type="button" disabled>논문 양식 준비 중</button>
             )}
-          </div>
+          </div>}
         </div>
       </div>
     </section>
