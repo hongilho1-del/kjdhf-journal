@@ -4,8 +4,8 @@ import { useState, type FormEvent } from "react";
 import { getErrorMessage } from "@/lib/journal";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-export function AuthPanel({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }: { onClose: () => void; adminLogin?: boolean; initialMode?: "login" | "signup" }) {
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -33,8 +33,16 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
         if (data.session) await supabase.auth.signOut();
         setMessage("가입 신청이 접수되었습니다. 이메일 인증과 관리자 승인 후 로그인할 수 있습니다.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (adminLogin) {
+          const { data: adminProfile, error: profileError } = await supabase.from("profiles").select("role,is_active").eq("id", data.user.id).maybeSingle();
+          if (profileError) throw profileError;
+          if (!adminProfile?.is_active || adminProfile.role !== "ADMIN") {
+            await supabase.auth.signOut();
+            throw new Error("승인된 관리자 계정이 아닙니다. 일반 로그인 또는 저자 회원가입을 이용해 주세요.");
+          }
+        }
         onClose();
       }
     } catch (error) {
@@ -48,10 +56,12 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button className="modal-close" type="button" onClick={onClose} aria-label="닫기">×</button>
-        <p className="panel-eyebrow">KJDHF ACCOUNT</p>
-        <h2 id="auth-title">{mode === "login" ? "시스템 로그인" : "저자 회원가입 신청"}</h2>
+        <p className="panel-eyebrow">{adminLogin ? "KJDHF ADMINISTRATION" : "KJDHF ACCOUNT"}</p>
+        <h2 id="auth-title">{adminLogin ? "관리자 로그인" : mode === "login" ? "시스템 로그인" : "저자 회원가입 신청"}</h2>
         <p className="panel-description">
-          {mode === "login"
+          {adminLogin
+            ? "별도로 발급된 ADMIN 계정으로 로그인하세요. 관리자 계정은 공개 회원가입으로 만들 수 없습니다."
+            : mode === "login"
             ? "등록된 계정으로 논문투고·심사 업무를 계속하세요."
             : "신규 계정은 저자 권한으로 신청되며, 이메일 인증과 관리자의 가입 승인 후 이용할 수 있습니다."}
         </p>
@@ -71,9 +81,9 @@ export function AuthPanel({ onClose }: { onClose: () => void }) {
           </button>
         </form>
         {message && <p className="form-message" role="status">{message}</p>}
-        <button className="mode-switch" type="button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
+        {!adminLogin && <button className="mode-switch" type="button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
           {mode === "login" ? "처음 방문하셨나요? 저자 회원가입" : "이미 계정이 있나요? 로그인"}
-        </button>
+        </button>}
       </section>
     </div>
   );

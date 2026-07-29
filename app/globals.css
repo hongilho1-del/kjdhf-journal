@@ -2168,3 +2168,44 @@ footer button { color: inherit; }
   .admin-post-list article { grid-template-columns: 1fr; }
   .admin-post-list nav { justify-content: flex-end; }
 }
+
+/* 건강체력연구소 연결 페이지와 관리자 진입 */
+.jams-utility .admin-login-link { background: rgba(255, 255, 255, .1); color: white; font-weight: 850; }
+.assignment-heading { display: flex; margin-bottom: 16px; align-items: center; justify-content: space-between; }
+.assignment-heading h3 { margin: 0; }
+.assignment-heading strong { padding: 5px 8px; background: var(--mint); color: var(--forest-2); font-size: 10px; }
+.institute-page { min-height: 720px; background: white; }
+.institute-hero { position: relative; overflow: hidden; background: linear-gradient(118deg, var(--ink), var(--forest-2)); color: white; }
+.institute-hero::after { position: absolute; top: -140px; right: 8%; width: 420px; height: 420px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; box-shadow: 0 0 0 70px rgba(255, 255, 255, .035), 0 0 0 140px rgba(255, 255, 255, .025); content: ""; }
+.institute-hero-inner { position: relative; z-index: 1; display: flex; min-height: 330px; align-items: center; justify-content: space-between; }
+.institute-hero p { margin: 0 0 14px; color: #80d9fb; font-size: 9px; font-weight: 900; letter-spacing: .2em; }
+.institute-hero h1 { margin: 0; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.065em; }
+.institute-hero div > span { display: block; margin-top: 20px; color: rgba(255, 255, 255, .66); font-size: 13px; }
+.institute-monogram { position: relative; display: grid; width: 220px; height: 150px; place-items: center; }
+.institute-monogram span { position: relative; z-index: 2; margin: 0; color: white; font-size: 25px; font-weight: 900; letter-spacing: .18em; }
+.institute-monogram i { position: absolute; width: 190px; height: 82px; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; transform: rotate(24deg); }
+.institute-monogram i:last-child { transform: rotate(-24deg); }
+.institute-content { padding: 28px 0 100px; }
+.institute-content > nav { display: flex; padding-bottom: 24px; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.institute-content > nav strong { color: var(--ink); }
+.institute-intro { display: grid; padding: 70px 0 52px; grid-template-columns: .9fr 1.1fr; gap: 80px; }
+.institute-intro small { color: var(--forest-2); font-size: 9px; font-weight: 900; letter-spacing: .18em; }
+.institute-intro h2 { margin: 14px 0 0; font-size: clamp(30px, 4vw, 47px); letter-spacing: -.065em; line-height: 1.3; }
+.institute-intro > div:last-child { padding-top: 18px; }
+.institute-intro p { margin: 0 0 16px; color: #5f6a73; font-size: 13px; line-height: 1.9; }
+.institute-cards { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.institute-cards article { min-height: 200px; padding: 28px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.institute-cards span { color: var(--forest-2); font-size: 9px; font-weight: 900; }
+.institute-cards strong { display: block; margin-top: 38px; font-size: 19px; }
+.institute-cards p { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.institute-back { display: flex; min-width: 290px; min-height: 50px; margin: 34px 0 0 auto; padding: 0 18px; align-items: center; justify-content: space-between; background: var(--ink); color: white; font-size: 11px; font-weight: 800; }
+
+@media (max-width: 760px) {
+  .institute-hero-inner { min-height: 320px; }
+  .institute-monogram { display: none; }
+  .institute-intro { padding: 52px 0 36px; grid-template-columns: 1fr; gap: 18px; }
+  .institute-cards { grid-template-columns: 1fr; }
+  .institute-cards article { min-height: 160px; }
+  .institute-cards strong { margin-top: 25px; }
+  .institute-back { width: 100%; min-width: 0; }
+}

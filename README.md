@@ -23,16 +23,17 @@ Supabase
 
 ## 구현 범위
 
-- 신규 회원가입 시 `AUTHOR` 프로필 자동 생성
+- 신규 회원가입 시 승인대기 `AUTHOR` 프로필 자동 생성, ADMIN의 가입 승인·이용중지
 - `AUTHOR`, `REVIEWER`, `EDITOR`, `ADMIN` 역할과 관리자 전용 역할 변경 RPC
 - 작성중부터 발행완료까지 14단계 상태와 모든 변경 이력 기록
 - `KJDHF-연도-일련번호` 형식의 원고번호 원자적 발급
 - 교신저자·공동저자, 한·영 제목/초록/키워드, 연구분야, 윤리·이해상충·저작권 동의
 - 원고·익명 원고, 수정본, 심사의견서, 최종본, 발행본 파일 관리
-- 원고당 복수 심사위원 배정, 수락·거절, 심사기한 관리
+- 원고당 심사위원 3명 배정, 수락·거절, 심사기한 관리
 - 저자 공개용 의견과 편집위원 전용 의견 분리
 - 편집판정, 발행호 생성, 최종 게재처리와 논문 배정
 - 역할별 대시보드와 관리자 통계
+- 관리자 전용 공지사항·학회행사 작성, 수정, 공개 관리
 - 핵심 테이블 RLS, 보안 RPC, 역할·원고 상태 감사 이력
 
 ## 데이터베이스
@@ -43,6 +44,8 @@ Supabase
 | --- | --- |
 | `profiles` | 사용자 기본정보, 역할, 활성 상태 |
 | `profile_role_history` | 역할 변경 감사 이력 |
+| `profile_approval_history` | 가입 승인·이용중지 감사 이력 |
+| `board_posts` | 공지사항·학회행사 게시물 |
 | `manuscripts` | 투고 메타데이터와 현재 상태 |
 | `authors` | 교신·공동저자와 순서 |
 | `manuscript_files` | Storage 객체의 권한·버전 메타데이터 |
@@ -63,6 +66,8 @@ Supabase
 - `20260728172051_harden_file_metadata_policy.sql`: 파일 메타데이터 정책 강화
 - `20260728172253_fix_workflow_enum_casts.sql`: 상태 전이 enum 보강
 - `20260729010000_storage_object_policies.sql`: Storage 객체 정책
+- `20260729032000_member_approval_and_boards.sql`: 회원 승인과 공지·행사 게시판
+- `20260729050000_three_reviewer_workflow.sql`: 논문별 심사위원 3명 배정 규칙
 
 ## 개발환경 실행
 
@@ -125,18 +130,24 @@ Redirect URLs: https://OWNER.github.io/REPOSITORY/**
 
 객체 경로에는 이메일이나 이름을 사용하지 않고 UUID만 사용합니다. Reviewer용 원고 목록·파일 목록은 작성자 테이블을 직접 열지 않는 보안 RPC가 필요한 필드만 반환합니다. Author는 배정·심사위원 프로필을 조회할 수 없고, Reviewer는 저자·소속·이메일을 조회할 수 없습니다.
 
-## 최초 관리자 계정 생성
+## 최초 관리자 계정 생성과 로그인
 
-1. 운영할 이메일로 화면에서 일반 회원가입을 완료합니다.
-2. Supabase Dashboard SQL Editor에서 그 계정 하나만 최초 관리자로 승격합니다.
+관리자는 공개 회원가입을 사용하지 않습니다.
+
+1. Supabase Dashboard의 **Authentication → Users → Add user**에서 관리자 이메일과 초기 비밀번호를 별도로 발급하고 이메일을 자동 확인 처리합니다.
+2. SQL Editor에서 방금 만든 계정을 최초 관리자로 활성화합니다.
 
 ```sql
 update public.profiles
-set role = 'ADMIN'
+set role = 'ADMIN',
+    is_active = true,
+    approved_at = now(),
+    approved_by = id
 where email = 'admin@example.org';
 ```
 
-3. 다시 로그인한 뒤 관리자 대시보드의 사용자 관리에서 `REVIEWER`, `EDITOR`, `ADMIN` 역할을 부여합니다.
+3. 사이트 최상단의 **관리자 로그인**을 눌러 발급한 이메일과 비밀번호로 로그인합니다.
+4. 관리자 대시보드의 **가입·권한 관리**에서 회원가입을 승인하고 역할을 부여합니다. **공지·행사 관리**에서는 게시물을 등록하거나 편집할 수 있습니다.
 
 일반 사용자는 `profiles.role`을 직접 수정할 권한이 없습니다. 이후 역할 변경은 `ADMIN`만 호출 가능한 `set_user_role` RPC를 거치며 `profile_role_history`에 기록됩니다.
 
@@ -171,11 +182,11 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/workflow.sql
 ```
 
-- [supabase/tests/workflow.sql](./supabase/tests/workflow.sql): 회원·투고·원고번호·접수·2인 배정·심사·수정·게재확정·최종본·발행호의 15단계 흐름
+- [supabase/tests/workflow.sql](./supabase/tests/workflow.sql): 회원·투고·원고번호·접수·3인 배정·심사·수정·게재확정·최종본·발행호의 15단계 흐름
 - [supabase/tests/rls.sql](./supabase/tests/rls.sql): 타 저자 접근, Reviewer의 저자정보 접근, Author의 Reviewer 정보 접근, 일반 사용자의 관리자 기능·역할 변경 차단
 - [tests/rendered-html.test.mjs](./tests/rendered-html.test.mjs): 정적 렌더, 비밀키 유출, RLS/Storage migration, Reviewer UI 쿼리 경계
 
-운영 전에는 실제 이메일 인증 정책에 맞춰 AUTHOR 2명, REVIEWER 2명, EDITOR 1명, ADMIN 1명의 별도 테스트 계정으로 같은 시나리오를 한 번 더 수행하는 것을 권장합니다.
+운영 전에는 실제 이메일 인증 정책에 맞춰 AUTHOR 2명, REVIEWER 3명, EDITOR 1명, ADMIN 1명의 별도 테스트 계정으로 같은 시나리오를 한 번 더 수행하는 것을 권장합니다.
 
 ## 백업과 복구
 

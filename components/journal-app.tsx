@@ -6,18 +6,20 @@ import { AuthorDashboard } from "@/components/author-dashboard";
 import { AuthPanel } from "@/components/auth-panel";
 import { CommunityBoard } from "@/components/community-board";
 import { EditorDashboard } from "@/components/editor-dashboard";
+import { HealthFitnessInstitute } from "@/components/health-fitness-institute";
 import { ProfilePanel } from "@/components/profile-panel";
 import { PublicHome } from "@/components/public-home";
 import { ReviewerDashboard } from "@/components/reviewer-dashboard";
 import { ROLE_LABELS, type BoardCategory, type Profile } from "@/lib/journal";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-type View = "home" | "notice" | "events" | "dashboard" | "profile";
+type View = "home" | "institute" | "notice" | "events" | "dashboard" | "profile";
 
 function publicViewFromHash(): View {
   if (typeof window === "undefined") return "home";
   if (window.location.hash.startsWith("#notice")) return "notice";
   if (window.location.hash.startsWith("#events")) return "events";
+  if (window.location.hash.startsWith("#health-fitness-institute")) return "institute";
   return "home";
 }
 
@@ -25,6 +27,8 @@ export function JournalApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [adminLogin, setAdminLogin] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [view, setView] = useState<View>(publicViewFromHash);
   const [boardPostId, setBoardPostId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -43,14 +47,14 @@ export function JournalApp() {
       setSession(data.session);
       if (data.session) {
         await loadProfile(data.session.user.id);
-        if (!window.location.hash.startsWith("#notice") && !window.location.hash.startsWith("#events")) setView("dashboard");
+        if (!["#notice", "#events", "#health-fitness-institute"].some((hash) => window.location.hash.startsWith(hash))) setView("dashboard");
       }
     });
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (nextSession) {
         window.setTimeout(() => void loadProfile(nextSession.user.id), 0);
-        if (!window.location.hash.startsWith("#notice") && !window.location.hash.startsWith("#events")) setView("dashboard");
+        if (!["#notice", "#events", "#health-fitness-institute"].some((hash) => window.location.hash.startsWith(hash))) setView("dashboard");
       } else {
         setProfile(null);
         setView("home");
@@ -65,6 +69,9 @@ export function JournalApp() {
       if (nextView === "notice" || nextView === "events") {
         setView(nextView);
         setBoardPostId(new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("post"));
+      } else if (nextView === "institute") {
+        setView("institute");
+        setBoardPostId(null);
       } else if (!session) {
         setView("home");
         setBoardPostId(null);
@@ -81,7 +88,13 @@ export function JournalApp() {
 
   function enterSystem() {
     if (session) setView("dashboard");
-    else setAuthOpen(true);
+    else openAuth();
+  }
+
+  function openAuth(asAdmin = false, mode: "login" | "signup" = "login") {
+    setAdminLogin(asAdmin);
+    setAuthMode(mode);
+    setAuthOpen(true);
   }
 
   function openHomeSection(sectionId: string) {
@@ -106,6 +119,13 @@ export function JournalApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function openInstitute() {
+    setView("institute");
+    setBoardPostId(null);
+    window.history.pushState(null, "", "#health-fitness-institute");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <main>
       <div className="jams-utility">
@@ -113,9 +133,11 @@ export function JournalApp() {
           <p>한국 디지털 건강체력학회지</p>
           <nav aria-label="사용자 메뉴">
             <a href="https://www.kongju.ac.kr/" target="_blank" rel="noreferrer">국립공주대학교</a>
+            <button type="button" onClick={openInstitute}>건강체력연구소</button>
             <button type="button" onClick={() => openHomeSection("journal-about")}>학회지 안내</button>
-            {!session && <button type="button" onClick={() => setAuthOpen(true)}>로그인</button>}
-            {!session && <button type="button" onClick={() => setAuthOpen(true)}>회원가입</button>}
+            {!session && <button type="button" onClick={() => openAuth()}>로그인</button>}
+            {!session && <button type="button" onClick={() => openAuth(false, "signup")}>회원가입</button>}
+            {!session && <button className="admin-login-link" type="button" onClick={() => openAuth(true)}>관리자 로그인</button>}
             {session && <button type="button" onClick={() => setView("dashboard")}>나의 업무</button>}
             {session && <button type="button" onClick={() => void signOut()}>로그아웃</button>}
           </nav>
@@ -134,7 +156,7 @@ export function JournalApp() {
                 <span>{profile.full_name?.slice(0, 1) || "나"}</span><b>{profile.full_name || profile.email}</b><small>{ROLE_LABELS[profile.role]}</small>
               </button>
             ) : (
-              <button className="jams-login-button" type="button" onClick={() => setAuthOpen(true)}>온라인 투고·심사</button>
+              <button className="jams-login-button" type="button" onClick={() => openAuth()}>온라인 투고·심사</button>
             )}
           </div>
         </div>
@@ -166,7 +188,7 @@ export function JournalApp() {
         </div>
       </header>
 
-      {view === "home" ? <PublicHome onEnter={enterSystem} onOpenBoard={openBoard} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : !session || !profile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => setAuthOpen(true)}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : <section className="workspace"><div className="shell workspace-shell">
+      {view === "home" ? <PublicHome onEnter={enterSystem} onOpenBoard={openBoard} /> : view === "institute" ? <HealthFitnessInstitute onBackHome={openHome} /> : view === "notice" || view === "events" ? <CommunityBoard category={view === "notice" ? "NOTICE" : "EVENT"} initialPostId={boardPostId} onCategoryChange={openBoard} onBackHome={openHome} /> : !session || !profile ? <section className="access-state"><h1>로그인이 필요합니다.</h1><p>{error || "투고·심사 업무는 인증된 사용자만 이용할 수 있습니다."}</p><button className="button button-primary" onClick={() => openAuth()}>로그인</button></section> : !profile.is_active ? <section className="access-state"><h1>가입 승인 대기 중입니다.</h1><p>이메일 인증과 편집관리자의 승인이 완료되면 시스템을 이용할 수 있습니다.</p><button className="button button-secondary" type="button" onClick={() => void signOut()}>로그아웃</button></section> : <section className="workspace"><div className="shell workspace-shell">
         <div className="workspace-top"><div><span>{ROLE_LABELS[profile.role]}</span><strong>{profile.email}</strong></div><nav><button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>대시보드</button><button className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}>내 정보</button></nav></div>
         {view === "profile" ? <ProfilePanel profile={profile} onSaved={() => loadProfile(profile.id)} /> : profile.role === "AUTHOR" ? <AuthorDashboard profile={profile} /> : profile.role === "REVIEWER" ? <ReviewerDashboard profile={profile} /> : <EditorDashboard profile={profile} />}
       </div></section>}
@@ -185,7 +207,7 @@ export function JournalApp() {
           <button className="jams-top-button" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>TOP ↑</button>
         </div>
       </footer>
-      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
+      {authOpen && <AuthPanel adminLogin={adminLogin} initialMode={authMode} onClose={() => setAuthOpen(false)} />}
     </main>
   );
 }

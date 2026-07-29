@@ -24,6 +24,8 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /최신발행학술지/);
   assert.match(html, /이중맹검 심사/);
   assert.match(html, /온라인 투고·심사 시작/);
+  assert.match(html, /건강체력연구소/);
+  assert.match(html, /관리자 로그인/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {
@@ -38,13 +40,14 @@ test("keeps privileged credentials out of frontend source", async () => {
   assert.match(source, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
 });
 
-test("migrations define RLS, audit history, approval, boards, and private storage boundaries", async () => {
-  const [schema, rls, buckets, policies, community] = await Promise.all([
+test("migrations define RLS, audit history, approval, three-reviewer workflow, boards, and private storage boundaries", async () => {
+  const [schema, rls, buckets, policies, community, reviewerWorkflow] = await Promise.all([
     readFile(new URL("../supabase/migrations/20260728165759_initial_schema.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165805_rls_and_workflow.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729010000_storage_object_policies.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729032000_member_approval_and_boards.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729050000_three_reviewer_workflow.sql", import.meta.url), "utf8"),
   ]);
   for (const table of ["profiles", "manuscripts", "authors", "manuscript_files", "reviewer_assignments", "reviews", "editorial_decisions", "manuscript_status_history", "issues", "published_articles"]) {
     assert.match(schema, new RegExp(`create table public\\.${table}\\b`, "i"));
@@ -59,6 +62,8 @@ test("migrations define RLS, audit history, approval, boards, and private storag
   assert.match(community, /set_user_activation/);
   assert.match(community, /profile_approval_history/);
   assert.match(community, /alter column is_active set default false/i);
+  assert.match(reviewerWorkflow, /active_count\s*>=\s*3/i);
+  assert.match(reviewerWorkflow, /accepted_count\s*>=\s*3/i);
 });
 
 test("reviewer UI never queries author identity tables", async () => {
