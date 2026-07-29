@@ -26,8 +26,9 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /온라인 투고·심사 시작/);
   assert.match(html, /건강체력연구소/);
   assert.match(html, /관리자 로그인/);
-  assert.match(html, /logos\/kjdhf-logo\.png/);
-  assert.match(html, /logos\/health-fitness-institute-logo\.png\?v=3/);
+  assert.match(html, /logos\/kjdhp-journal-logo\.png/);
+  assert.match(html, /logos\/kjdhp-journal-logo\.png\?v=1/);
+  assert.match(html, /images\/kjdhp-vol01-cover\.png/);
   assert.match(html, /논문투고 규정/);
   assert.match(html, /편집위원회/);
   assert.match(html, /연구 윤리위원회/);
@@ -41,7 +42,7 @@ test("journal information links use the supplied logo and open four dedicated vi
     readFile(new URL("../lib/journal-pages.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(home, /logos\/kjdhf-logo\.png/);
+  assert.match(home, /logos\/kjdhp-journal-logo\.png/);
   assert.doesNotMatch(home, /jams-about-mark/);
   for (const page of ["submission-guidelines", "editorial-board", "research-ethics", "manuscript-template"]) {
     assert.match(home, new RegExp(page));
@@ -163,21 +164,25 @@ test("editor assigns reviewers one at a time with a future due date", async () =
   assert.match(editor, /형식검토 시작/);
 });
 
-test("ships both supplied logos with the darker Kongju palette", async () => {
-  const [journalLogo, transparentLogo, instituteLogo, css, app] = await Promise.all([
-    stat(new URL("../public/logos/kjdhf-logo.png", import.meta.url)),
-    readFile(new URL("../public/logos/kjdhf-logo-transparent.png", import.meta.url)),
+test("ships the supplied journal logo and latest issue cover with the darker Kongju palette", async () => {
+  const [journalLogo, cover, instituteLogo, css, app, home, ejournal] = await Promise.all([
+    readFile(new URL("../public/logos/kjdhp-journal-logo.png", import.meta.url)),
+    stat(new URL("../public/images/kjdhp-vol01-cover.png", import.meta.url)),
     stat(new URL("../public/logos/health-fitness-institute-logo.png", import.meta.url)),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/e-journal-page.tsx", import.meta.url), "utf8"),
   ]);
-  assert.ok(journalLogo.size > 10_000);
-  assert.ok(transparentLogo.length > 10_000);
-  assert.equal(transparentLogo[25], 6, "footer logo must be an RGBA PNG");
+  assert.ok(journalLogo.length > 10_000);
+  assert.equal(journalLogo[25], 6, "journal logo must be an RGBA PNG");
+  assert.ok(cover.size > 10_000);
   assert.ok(instituteLogo.size > 10_000);
   assert.match(css, /--ink:\s*#061a38/i);
   assert.match(css, /--forest:\s*#082b5d/i);
-  assert.match(app, /logos\/kjdhf-logo-transparent\.png/);
+  assert.match(app, /logos\/kjdhp-journal-logo\.png/);
+  assert.match(home, /images\/kjdhp-vol01-cover\.png/);
+  assert.match(ejournal, /images\/kjdhp-vol01-cover\.png/);
   assert.match(app, /https:\/\/prhome\.kongju\.ac\.kr\/sites\/hpflab/);
   assert.doesNotMatch(css.match(/\.jams-footer \.footer-brand[^}]+}/)?.[0] ?? "", /background:\s*white/i);
 });

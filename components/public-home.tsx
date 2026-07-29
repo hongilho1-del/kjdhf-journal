@@ -58,12 +58,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
               <button type="button" onClick={() => onOpenEJournal("journal")}>전체보기 +</button>
             </div>
             <div className="jams-latest-body">
-              <div className="jams-cover" aria-label="한국 디지털 건강체력학회지 표지">
-                <span>KJDHF</span>
-                <strong>한국 디지털<br />건강체력학회지</strong>
-                <small>KOREAN JOURNAL OF<br />DIGITAL HEALTH &amp; FITNESS</small>
-                <i>VOL. 01</i>
-              </div>
+              <img className="jams-cover" src={`${assetBasePath}/images/kjdhp-vol01-cover.png`} alt="한국디지털건강체력연구 제1권 제1호 표지" width={1036} height={1519} />
               <div className="jams-journal-info">
                 <span>창간호 준비 중</span>
                 <h3>한국 디지털 건강체력학회지</h3>
@@ -122,7 +117,7 @@ export function PublicHome({ onEnter, onSubmit, onOpenEJournal, onOpenBoard, onO
             <h2>학회지 안내</h2>
             <div className="jams-about-logo">
               {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
-              <img src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
+              <img src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} loading="lazy" />
             </div>
           </div>
           <div className="jams-about-copy">

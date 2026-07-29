@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 const siteUrl = `${(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")}/`;
-const faviconPath = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logos/health-fitness-institute-logo.png?v=3`;
+const faviconPath = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logos/kjdhp-journal-logo.png?v=1`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

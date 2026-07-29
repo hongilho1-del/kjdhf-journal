@@ -206,7 +206,7 @@ export function JournalApp() {
         <div className="shell jams-masthead">
           <button className="brand brand-button jams-brand" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
-            <img className="journal-brand-logo" src={`${assetBasePath}/logos/kjdhf-logo.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} />
+            <img className="journal-brand-logo" src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} />
           </button>
           <div className="jams-header-tools">
             <a className="institute-header-mark" href={INSTITUTE_URL} target="_blank" rel="noreferrer">
@@ -260,7 +260,7 @@ export function JournalApp() {
         <div className="shell jams-footer-grid">
           <button className="brand footer-brand brand-button" type="button" onClick={openHome} aria-label="한국 디지털 건강체력학회지 홈">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset must work on GitHub Pages basePath */}
-            <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhf-logo-transparent.png`} alt="한국 디지털 건강체력학회지" width={1100} height={388} loading="lazy" />
+            <img className="footer-journal-logo" src={`${assetBasePath}/logos/kjdhp-journal-logo.png`} alt="한국디지털건강체력연구" width={2832} height={1216} loading="lazy" />
           </button>
           <div className="jams-footer-info">
             <p>국립공주대학교 건강체력연구소 · 한국 디지털 건강체력학회지 편집국</p>

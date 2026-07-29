@@ -10,6 +10,8 @@ type Issue = Tables<"issues">;
 type Article = Tables<"published_articles">;
 type Tab = "search" | "journal";
 
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export function EJournalPage({ initialTab = "search", onBackHome }: { initialTab?: Tab; onBackHome: () => void }) {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -91,7 +93,7 @@ export function EJournalPage({ initialTab = "search", onBackHome }: { initialTab
         <div className="ejournal-result-heading"><h2>발행 학술지</h2><span>총 {issues.length}개 권호</span></div>
         {loading ? <div className="empty-state">학술지 권호를 불러오는 중입니다.</div> : issues.length ? <div className="issue-list">
           {issues.map((issue) => <article key={issue.id} className="issue-card">
-            <div className="issue-cover"><span>KJDHF</span><strong>VOL. {String(issue.volume).padStart(2, "0")}</strong><small>NO. {String(issue.issue_number).padStart(2, "0")}</small></div>
+            <img className="issue-cover-image" src={`${assetBasePath}/images/kjdhp-vol01-cover.png`} alt={`${issue.title || `제${issue.volume}권 제${issue.issue_number}호`} 표지`} width={1036} height={1519} loading="lazy" />
             <div><small>{issue.year} · {formatDate(issue.publication_date)}</small><h3>{issue.title || `제${issue.volume}권 제${issue.issue_number}호`}</h3><p>수록 논문 {articlesByIssue(issue.id).length}편</p>
               <ol>{articlesByIssue(issue.id).map((article) => <li key={article.id}><button type="button" disabled={!article.pdf_file_id} onClick={() => void openPdf(article)}><span>{article.article_order}. {article.title_ko}</span><small>{article.page_start ? `${article.page_start}${article.page_end ? `–${article.page_end}` : ""}쪽` : ""}</small></button></li>)}</ol>
             </div>
