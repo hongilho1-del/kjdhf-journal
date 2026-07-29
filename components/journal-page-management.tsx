@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { formatDate, getErrorMessage, type BoardPost, type Profile } from "@/lib/journal";
+import { buildJournalTableTemplate } from "@/lib/journal-content";
 import {
   JOURNAL_PAGE_STORAGE_PREFIX,
   getJournalPageDefinition,
@@ -24,6 +25,9 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [tableColumns, setTableColumns] = useState(3);
+  const [tableRows, setTableRows] = useState(3);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadPages = useCallback(async () => {
     setLoading(true);
@@ -45,6 +49,20 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
   const definition = getJournalPageDefinition(selectedPage);
   const storageTitle = getJournalPageStorageTitle(selectedPage);
   const savedPage = pages.find((item) => item.title === storageTitle) ?? null;
+
+  function insertTable() {
+    const textarea = contentTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = textarea.value.slice(0, start);
+    const after = textarea.value.slice(end);
+    const prefix = before && !before.endsWith("\n\n") ? (before.endsWith("\n") ? "\n" : "\n\n") : "";
+    const suffix = after && !after.startsWith("\n\n") ? (after.startsWith("\n") ? "\n" : "\n\n") : "";
+    const table = buildJournalTableTemplate(tableColumns, tableRows);
+    textarea.setRangeText(`${prefix}${table}${suffix}`, start, end, "end");
+    textarea.focus();
+  }
 
   async function savePage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,13 +134,21 @@ export function JournalPageManagement({ profile }: { profile: Profile }) {
         {message && <div className="notice-box" role="status">{message}</div>}
         {loading ? <div className="empty-state">안내 페이지를 불러오는 중입니다.</div> : <form key={`${selectedPage}-${savedPage?.updated_at ?? "new"}`} className="stack-form journal-page-editor-form" onSubmit={savePage}>
           <p>{definition.description}</p>
-          <label>페이지 내용<textarea name="content" rows={18} defaultValue={savedPage?.content ?? ""} placeholder="이 페이지에 공개할 내용을 입력해 주세요." required /></label>
+          {selectedPage === "submission-guidelines" && <section className="journal-table-insert">
+            <div><strong>표 삽입</strong><p>필요한 크기를 선택하면 현재 커서 위치에 표가 추가됩니다. 삽입 후 제목과 내용을 직접 수정하세요.</p></div>
+            <div className="journal-table-insert-controls">
+              <label>열 수<input type="number" min={2} max={8} value={tableColumns} onChange={(event) => setTableColumns(Number(event.target.value))} /></label>
+              <label>본문 행 수<input type="number" min={1} max={30} value={tableRows} onChange={(event) => setTableRows(Number(event.target.value))} /></label>
+              <button type="button" onClick={insertTable}>표 추가 +</button>
+            </div>
+          </section>}
+          <label>페이지 내용<textarea ref={contentTextareaRef} name="content" rows={18} defaultValue={savedPage?.content ?? ""} placeholder="이 페이지에 공개할 내용을 입력해 주세요." required /></label>
           {selectedPage === "manuscript-template" && <section className="journal-template-upload">
             <label>논문 양식 파일<input name="attachment" type="file" accept=".pdf,.doc,.docx,.hwp,.hwpx" /></label>
             <p>PDF, DOC, DOCX, HWP, HWPX · 최대 20MB</p>
             {savedPage?.attachment_name && <div><span>현재 등록 파일</span><strong>{savedPage.attachment_name}</strong><small>{savedPage.attachment_size_bytes ? formatFileSize(savedPage.attachment_size_bytes) : ""}</small></div>}
           </section>}
-          <div className="journal-page-editor-note">줄바꿈은 공개 페이지에서도 그대로 표시됩니다. 저장 즉시 방문자 화면에 반영됩니다.</div>
+          <div className="journal-page-editor-note">줄바꿈과 삽입한 표는 공개 페이지에서도 그대로 표시됩니다. 저장 즉시 방문자 화면에 반영됩니다.</div>
           <button className="button button-primary" disabled={busy}>{busy ? "저장 중…" : "안내 페이지 저장"}</button>
         </form>}
       </section>

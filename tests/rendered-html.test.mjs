@@ -188,10 +188,11 @@ test("ships the supplied journal logo and latest issue cover with the darker Kon
 });
 
 test("admin can edit review-information pages without exposing them as notices", async () => {
-  const [editor, management, information, publicHome, board, community, rls] = await Promise.all([
+  const [editor, management, information, contentParser, publicHome, board, community, rls] = await Promise.all([
     readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/public-home.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/board-management.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/community-board.tsx", import.meta.url), "utf8"),
@@ -201,7 +202,16 @@ test("admin can edit review-information pages without exposing them as notices",
   assert.match(editor, /<JournalPageManagement profile=\{profile\}/);
   assert.match(management, /from\("board_posts"\).*update/s);
   assert.match(management, /from\("board_posts"\).*insert/s);
+  assert.match(management, /selectedPage === "submission-guidelines"/);
+  assert.match(management, /표 추가 \+/);
+  assert.match(management, /buildJournalTableTemplate/);
   assert.match(information, /getJournalPageStorageTitle\(page\)/);
+  assert.match(information, /<table className="journal-information-table">/);
+  assert.match(information, /parseJournalContent/);
+  assert.doesNotMatch(information, /dangerouslySetInnerHTML/);
+  assert.match(contentParser, /type: "table"/);
+  assert.match(contentParser, /Math\.min\(8, Math\.max\(2/);
+  assert.match(contentParser, /Math\.min\(30, Math\.max\(1/);
   assert.match(publicHome, /KJDHF_PAGE:/);
   assert.match(community, /KJDHF_PAGE:/);
   assert.match(board, /isJournalPagePost/);
