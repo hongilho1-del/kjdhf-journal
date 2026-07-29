@@ -32,6 +32,7 @@ export const STATUS_LABELS: Record<ManuscriptStatus, string> = {
   ACCEPTED: "게재가",
   ACCEPT_WITH_REVISIONS: "수정후게재",
   REJECTED: "게재불가",
+  WITHDRAWN: "투고철회",
   FINAL_ACCEPTED: "게재확정",
   PUBLISHED: "발행완료",
 };
@@ -58,6 +59,7 @@ export const STATUS_GROUPS = {
   revision: ["REVISION_REQUESTED", "REVISION_SUBMITTED", "ACCEPT_WITH_REVISIONS"] as ManuscriptStatus[],
   accepted: ["ACCEPTED", "FINAL_ACCEPTED", "PUBLISHED"] as ManuscriptStatus[],
   rejected: ["REJECTED"] as ManuscriptStatus[],
+  withdrawn: ["WITHDRAWN"] as ManuscriptStatus[],
 };
 
 export function formatDate(value: string | null | undefined) {

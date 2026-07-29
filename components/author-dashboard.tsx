@@ -15,7 +15,11 @@ import { uploadJournalFile } from "@/lib/supabase/files";
 
 type AuthorDecision = { decision: keyof typeof DECISION_LABELS; author_letter: string; round_no: number; decided_at: string };
 type AuthorHistory = { from_status: keyof typeof STATUS_LABELS | null; to_status: keyof typeof STATUS_LABELS; note: string | null; changed_at: string };
-type ManuscriptFilter = "all" | "received" | "review" | "revision" | "final";
+type ManuscriptFilter = "all" | "received" | "review" | "revision" | "final" | "withdrawn";
+const WITHDRAWABLE_STATUSES: ManuscriptStatus[] = [
+  "SUBMITTED", "RECEIVED", "FORMAT_REVIEW", "REVIEWER_SELECTION", "UNDER_REVIEW",
+  "REVISION_REQUESTED", "REVISION_SUBMITTED", "RE_REVIEW", "ACCEPTED", "ACCEPT_WITH_REVISIONS",
+];
 
 export function openAuthorReviewResult(manuscriptId: string) {
   const url = new URL(window.location.href);
@@ -34,6 +38,7 @@ const FILTER_STATUSES: Record<Exclude<ManuscriptFilter, "all">, ManuscriptStatus
   review: ["REVIEWER_SELECTION", "UNDER_REVIEW", "RE_REVIEW"],
   revision: ["REVISION_REQUESTED", "REVISION_SUBMITTED"],
   final: ["ACCEPTED", "ACCEPT_WITH_REVISIONS", "FINAL_ACCEPTED", "PUBLISHED"],
+  withdrawn: ["WITHDRAWN"],
 };
 
 export function AuthorDashboard({ profile }: { profile: Profile }) {
@@ -41,6 +46,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ManuscriptFilter>("all");
   const [fileTarget, setFileTarget] = useState<{ manuscript: Manuscript; mode: "draft" | "revision" | "final" } | null>(null);
+  const [withdrawalTarget, setWithdrawalTarget] = useState<Manuscript | null>(null);
   const [detail, setDetail] = useState<{ manuscript: Manuscript; decisions: AuthorDecision[]; history: AuthorHistory[] } | null>(null);
 
   const loadManuscripts = useCallback(async () => {
@@ -70,7 +76,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
 
   const counts = {
     all: manuscripts.length,
-    active: manuscripts.filter((item) => !["DRAFT", "REJECTED", "PUBLISHED"].includes(item.status)).length,
+    active: manuscripts.filter((item) => !["DRAFT", "REJECTED", "WITHDRAWN", "PUBLISHED"].includes(item.status)).length,
     revision: manuscripts.filter((item) => item.status === "REVISION_REQUESTED").length,
     accepted: manuscripts.filter((item) => ["ACCEPTED", "ACCEPT_WITH_REVISIONS", "FINAL_ACCEPTED", "PUBLISHED"].includes(item.status)).length,
   };
@@ -82,6 +88,7 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
     { id: "review", label: "논문 심사 진행 현황", count: manuscripts.filter((item) => FILTER_STATUSES.review.includes(item.status)).length },
     { id: "revision", label: "수정 논문 제출 현황", count: manuscripts.filter((item) => FILTER_STATUSES.revision.includes(item.status)).length },
     { id: "final", label: "최종 논문 제출 현황", count: manuscripts.filter((item) => FILTER_STATUSES.final.includes(item.status)).length },
+    { id: "withdrawn", label: "투고 철회 현황", count: manuscripts.filter((item) => FILTER_STATUSES.withdrawn.includes(item.status)).length },
   ];
 
   return (
@@ -125,7 +132,8 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
                   {manuscript.status === "DRAFT" && <button type="button" onClick={() => openNewSubmissionPage(manuscript.id)}>작성 이어가기</button>}
                   {manuscript.status === "REVISION_REQUESTED" && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "revision" })}>수정원고 제출</button>}
                   {["ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(manuscript.status) && <button type="button" onClick={() => setFileTarget({ manuscript, mode: "final" })}>최종원고 제출</button>}
-                  {!["DRAFT", "SUBMITTED", "RECEIVED", "FORMAT_REVIEW", "REVIEWER_SELECTION"].includes(manuscript.status) && <button type="button" onClick={() => openAuthorReviewResult(manuscript.id)}>결과</button>}
+                  {!["DRAFT", "SUBMITTED", "RECEIVED", "FORMAT_REVIEW", "REVIEWER_SELECTION", "WITHDRAWN"].includes(manuscript.status) && <button type="button" onClick={() => openAuthorReviewResult(manuscript.id)}>결과</button>}
+                  {WITHDRAWABLE_STATUSES.includes(manuscript.status) && <button className="withdraw-manuscript-button" type="button" onClick={() => setWithdrawalTarget(manuscript)}>투고 철회</button>}
                   <button type="button" onClick={() => void openDetail(manuscript)}>이력 보기</button>
                 </div></td>
               </tr>
@@ -134,9 +142,36 @@ export function AuthorDashboard({ profile }: { profile: Profile }) {
         )}
       </section>
       {fileTarget && <FileSubmissionModal {...fileTarget} onClose={() => setFileTarget(null)} onComplete={loadManuscripts} />}
+      {withdrawalTarget && <WithdrawalModal manuscript={withdrawalTarget} onClose={() => setWithdrawalTarget(null)} onComplete={loadManuscripts} />}
       {detail && <AuthorDetailModal {...detail} onClose={() => setDetail(null)} />}
     </div>
   );
+}
+
+function WithdrawalModal({ manuscript, onClose, onComplete }: { manuscript: Manuscript; onClose: () => void; onComplete: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function withdraw(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const reason = String(new FormData(event.currentTarget).get("reason") ?? "").trim();
+    if (reason.length < 5) { setMessage("철회 사유를 5자 이상 입력해 주세요."); return; }
+    setBusy(true); setMessage("");
+    try {
+      const { error } = await getSupabaseClient().rpc("withdraw_manuscript", { target_manuscript_id: manuscript.id, reason });
+      if (error) throw error;
+      await onComplete();
+      onClose();
+    } catch (error) {
+      const rawMessage = getErrorMessage(error);
+      setMessage(/not allowed in the current status/i.test(rawMessage) ? "현재 단계에서는 투고를 철회할 수 없습니다." : rawMessage);
+    } finally { setBusy(false); }
+  }
+
+  return <div className="modal-backdrop"><section className="auth-panel withdrawal-modal" role="dialog" aria-modal="true" aria-labelledby="withdrawal-title"><button className="modal-close" type="button" onClick={onClose}>×</button><p className="panel-eyebrow">MANUSCRIPT WITHDRAWAL</p><h2 id="withdrawal-title">투고 철회</h2><p className="panel-description">{manuscript.manuscript_code} · {manuscript.title_ko}</p>
+    <div className="withdrawal-warning"><strong>철회 후에는 되돌릴 수 없습니다.</strong><p>원고와 처리 이력은 기록보존을 위해 삭제되지 않으며, 진행 중인 심사 배정은 자동으로 취소됩니다.</p></div>
+    <form className="stack-form" onSubmit={withdraw}><label>철회 사유<textarea name="reason" rows={5} minLength={5} required placeholder="편집위원회가 확인할 수 있도록 철회 사유를 입력해 주세요." /></label><div className="form-actions"><button className="secondary-button" type="button" disabled={busy} onClick={onClose}>취소</button><button className="danger-button" disabled={busy}>{busy ? "철회 처리 중…" : "투고 철회 확정"}</button></div>{message && <p className="form-message" role="status">{message}</p>}</form>
+  </section></div>;
 }
 
 function Metric({ label, value, tone = "default" }: { label: string; value: number; tone?: string }) {
@@ -178,6 +213,7 @@ export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: {
 
 function AuthorDetailModal({ manuscript, decisions, history, onClose }: { manuscript: Manuscript; decisions: AuthorDecision[]; history: AuthorHistory[]; onClose: () => void }) {
   return <div className="modal-backdrop modal-scroll"><section className="detail-modal" role="dialog" aria-modal="true"><button className="modal-close" type="button" onClick={onClose}>×</button><p className="panel-eyebrow">MANUSCRIPT HISTORY</p><h2>{manuscript.manuscript_code ?? "임시저장"}</h2><h3>{manuscript.title_ko}</h3>
+    {manuscript.status === "WITHDRAWN" && <div className="withdrawal-record"><strong>투고 철회 완료 · {formatDate(manuscript.withdrawn_at)}</strong><p>{manuscript.withdrawal_reason}</p></div>}
     <div className="detail-columns"><div><h4>편집결정</h4>{decisions.length ? decisions.map((item) => <article className="decision-card" key={`${item.decided_at}-${item.round_no}`}><span>{DECISION_LABELS[item.decision]} · {item.round_no}차</span><p>{item.author_letter}</p><small>{formatDate(item.decided_at)}</small></article>) : <p className="muted-text">공개된 편집결정이 없습니다.</p>}</div>
     <div><h4>상태 변경이력</h4><ol className="timeline">{history.map((item, index) => <li key={`${item.changed_at}-${index}`}><i /><div><strong>{STATUS_LABELS[item.to_status]}</strong><span>{formatDate(item.changed_at)}</span>{item.note && <p>{item.note}</p>}</div></li>)}</ol></div></div>
   </section></div>;

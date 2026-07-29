@@ -262,3 +262,23 @@ test("one account can receive multiple role workspaces without losing author acc
   assert.match(migration, /create or replace function public\.set_user_roles/i);
   assert.match(migration, /Authors cannot review their own manuscript/i);
 });
+
+test("authors can withdraw a submitted manuscript without deleting its audit record", async () => {
+  const [author, statusMigration, withdrawalMigration, journal] = await Promise.all([
+    readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729180000_add_withdrawn_manuscript_status.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729180100_author_manuscript_withdrawal.sql", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(author, /withdraw_manuscript/);
+  assert.match(author, /투고 철회 확정/);
+  assert.match(author, /철회 후에는 되돌릴 수 없습니다/);
+  assert.match(statusMigration, /alter type public\.manuscript_status add value if not exists 'WITHDRAWN'/i);
+  assert.match(withdrawalMigration, /create or replace function public\.withdraw_manuscript/i);
+  assert.match(withdrawalMigration, /created_by = auth\.uid\(\)/i);
+  assert.match(withdrawalMigration, /set status = 'CANCELLED'/i);
+  assert.match(withdrawalMigration, /manuscript_status_history/i);
+  assert.match(withdrawalMigration, /Withdrawn manuscripts cannot be reactivated/i);
+  assert.doesNotMatch(withdrawalMigration, /delete from public\.manuscripts/i);
+  assert.match(journal, /WITHDRAWN: "투고철회"/);
+});

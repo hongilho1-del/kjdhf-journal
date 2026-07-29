@@ -408,6 +408,9 @@ export type Database = {
           title_en: string
           title_ko: string
           updated_at: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
         }
         Insert: {
           abstract_en: string
@@ -429,6 +432,9 @@ export type Database = {
           title_en: string
           title_ko: string
           updated_at?: string
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
         }
         Update: {
           abstract_en?: string
@@ -450,11 +456,21 @@ export type Database = {
           title_en?: string
           title_ko?: string
           updated_at?: string
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "manuscripts_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manuscripts_withdrawn_by_fkey"
+            columns: ["withdrawn_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1083,6 +1099,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      withdraw_manuscript: {
+        Args: {
+          reason: string
+          target_manuscript_id: string
+        }
+        Returns: {
+          abstract_en: string
+          abstract_ko: string
+          conflict_of_interest_confirmed: boolean
+          copyright_agreed: boolean
+          created_at: string
+          created_by: string
+          current_due_at: string | null
+          ethics_confirmed: boolean
+          id: string
+          keywords_en: string[]
+          keywords_ko: string[]
+          manuscript_code: string | null
+          research_field: string
+          round_no: number
+          status: Database["public"]["Enums"]["manuscript_status"]
+          submitted_at: string | null
+          title_en: string
+          title_ko: string
+          updated_at: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+      }
       set_admin_login_alias: {
         Args: {
           login_username: string
@@ -1253,6 +1299,7 @@ export type Database = {
         | "ACCEPTED"
         | "ACCEPT_WITH_REVISIONS"
         | "REJECTED"
+        | "WITHDRAWN"
         | "FINAL_ACCEPTED"
         | "PUBLISHED"
       review_recommendation:
@@ -1425,6 +1472,7 @@ export const Constants = {
         "ACCEPTED",
         "ACCEPT_WITH_REVISIONS",
         "REJECTED",
+        "WITHDRAWN",
         "FINAL_ACCEPTED",
         "PUBLISHED",
       ],

@@ -1543,11 +1543,12 @@ button:focus-visible {
 .table-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .table-actions button, .review-actions button, .primary-small, .issue-row button { padding: 8px 10px; border: 1px solid var(--line); font-size: 9px; font-weight: 800; white-space: nowrap; }
 .table-actions button:first-child, .primary-small { background: var(--forest); border-color: var(--forest); color: white; }
+.table-actions .withdraw-manuscript-button { border-color: #b9746b; background: white; color: #8a382f; }
 .status-badge { display: inline-flex; padding: 7px 9px; background: #e8ebe5; color: #3f5148; font-size: 9px; font-weight: 800; white-space: nowrap; }
 .status-submitted, .status-revision_requested { background: #fff0cf; color: #8a5d09; }
 .status-under_review, .status-re_review { background: #dfeaf2; color: #315c75; }
 .status-accepted, .status-accept_with_revisions, .status-final_accepted, .status-published { background: #dcefe5; color: #1f6a48; }
-.status-rejected { background: #f2dedb; color: #8a382f; }
+.status-rejected, .status-withdrawn { background: #f2dedb; color: #8a382f; }
 .reviewer-pill { display: block; margin: 3px 0; font-size: 9px; white-space: nowrap; }
 .muted-text { color: var(--muted); font-size: 11px; }
 .notice-box { padding: 13px 15px; background: #fff0cf; border-left: 3px solid #c98a18; color: #634715; font-size: 11px; line-height: 1.6; }
@@ -1687,6 +1688,13 @@ button:focus-visible {
 .file-list button small { color: rgba(255,255,255,.55); font-size: 8px; }
 .file-list button b { color: var(--lime); font-size: 9px; }
 .review-form { padding-top: 20px; border-top: 1px solid var(--line); }
+.withdrawal-modal { width: min(100%, 620px); }
+.withdrawal-warning, .withdrawal-record { margin: 20px 0; padding: 16px 18px; border-left: 3px solid #a6473c; background: #f8e1dd; color: #6f3028; }
+.withdrawal-warning strong, .withdrawal-record strong { display: block; font-size: 11px; }
+.withdrawal-warning p, .withdrawal-record p { margin: 7px 0 0; font-size: 10px; line-height: 1.7; white-space: pre-wrap; }
+.withdrawal-record small { display: block; margin-top: 7px; color: #8f5a53; font-size: 8px; }
+.danger-button { min-height: 44px; padding: 0 16px; border: 1px solid #8a382f; background: #8a382f; color: white; font-size: 10px; font-weight: 850; }
+.danger-button:disabled { cursor: not-allowed; opacity: .55; }
 .numbered-review-comments { display: grid; margin: 0; padding: 20px; gap: 14px; border: 1px solid var(--line); background: #f6f8fa; }
 .numbered-review-comments legend { padding: 0 7px; color: var(--ink); font-size: 11px; font-weight: 850; }
 .numbered-review-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
