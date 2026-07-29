@@ -123,6 +123,10 @@ test("new submissions use a full-page ethics-first authoring wizard", async () =
   assert.match(submission, /RESEARCH_PUBLICATION_ETHICS_POLICY/);
   assert.match(submission, /ethics_author_names/);
   assert.match(submission, /연구·출판윤리규정에 동의합니다/);
+  assert.match(submission, /연구윤리 서약 연구자 명단/);
+  assert.match(submission, /논문에 참여한 연구자 전원의 이름/);
+  assert.match(submission, /ethicsAuthorNamesComplete/);
+  assert.match(submission, /disabled=\{!ethicsAuthorNamesComplete\}/);
   assert.match(submission, /AUTHOR_COUNT_OPTIONS/);
   assert.match(submission, /length: 10/);
   assert.ok(submission.indexOf("STEP 01") < submission.indexOf("STEP 02"));

@@ -2422,6 +2422,16 @@ footer button { color: inherit; }
 .ethics-notice { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--orange); background: #fff6ed; }
 .ethics-notice strong { display: block; color: #9d4c0b; font-size: 12px; }
 .ethics-notice p { margin: 7px 0 0; color: #725a47; font-size: 10px; line-height: 1.75; }
+.ethics-author-signatories { margin-top: 24px; padding: 24px; border: 1px solid #bfcbd4; background: #f8fafb; }
+.ethics-author-signatories > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.ethics-author-signatories > header small { color: var(--forest-2); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.ethics-author-signatories > header h3 { margin: 6px 0 5px; font-size: 20px; letter-spacing: -.035em; }
+.ethics-author-signatories > header p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.ethics-author-signatories > header label { display: flex; min-width: 132px; flex-direction: column; gap: 7px; color: #435149; font-size: 9px; font-weight: 850; }
+.ethics-author-signatories select, .ethics-author-name-grid input { min-height: 44px; padding: 10px 12px; border: 1px solid #bdc7cf; background: white; color: var(--ink); font: inherit; }
+.ethics-author-name-grid { display: grid; margin-top: 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.ethics-author-name-grid label { display: flex; flex-direction: column; gap: 7px; color: #435149; font-size: 9px; font-weight: 850; }
+.ethics-author-help { margin: 15px 0 0; color: var(--muted); font-size: 9px; line-height: 1.65; }
 .ethics-checklist { display: grid; margin-top: 24px; border-top: 1px solid var(--line); }
 .ethics-checklist > label { display: grid; min-height: 82px; padding: 18px 12px; grid-template-columns: 22px 1fr; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .ethics-checklist input, .corresponding-choice input, .final-consent input { width: 17px; height: 17px; accent-color: var(--forest-2); }
@@ -2560,6 +2570,9 @@ footer button { color: inherit; }
   .author-role-choices .corresponding-choice:last-child { border-bottom: 0; }
   .ethics-policy-card > header { align-items: flex-start; flex-direction: column; }
   .ethics-policy-card pre { max-height: 480px; padding: 20px 17px; font-size: 10px; }
+  .ethics-author-signatories { padding: 20px 17px; }
+  .ethics-author-signatories > header { align-items: stretch; flex-direction: column; }
+  .ethics-author-name-grid { grid-template-columns: 1fr; }
   .wizard-form label.wide, .wizard-form .wide, .submission-review > div.wide { grid-column: auto; }
   .wizard-actions { align-items: stretch; flex-direction: column-reverse; }
   .wizard-actions .button, .wizard-actions .secondary-button, .wizard-actions .draft-save-button { width: 100%; }

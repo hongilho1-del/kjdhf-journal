@@ -122,7 +122,8 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
   const [messageIsError, setMessageIsError] = useState(false);
   const [completedCode, setCompletedCode] = useState("");
   const authorship: AuthorshipType = authors.length === 1 ? "SOLE" : "COAUTHORED";
-  const ethicsComplete = ethicsAgreed;
+  const ethicsAuthorNamesComplete = authors.length > 0 && authors.every((author) => author.nameKo.trim().length > 0);
+  const ethicsComplete = ethicsAgreed && ethicsAuthorNamesComplete;
 
   useEffect(() => {
     if (!initialDraftId) return;
@@ -203,6 +204,16 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
 
   function updateAuthor(index: number, key: keyof DraftAuthor, value: string) {
     setAuthors((current) => current.map((author, authorIndex) => authorIndex === index ? { ...author, [key]: value } : author));
+  }
+
+  function setEthicsAuthorCount(nextCount: number) {
+    setAuthorCount(nextCount);
+    setEthicsAgreement(false);
+  }
+
+  function updateEthicsAuthorName(index: number, value: string) {
+    updateAuthor(index, "nameKo", value);
+    setEthicsAgreement(false);
   }
 
   function setEthicsAgreement(checked: boolean) {
@@ -378,8 +389,18 @@ function NewSubmissionWizard({ profile, initialDraftId, onCancel, onMyPage, onCo
         <pre tabIndex={0}>{RESEARCH_PUBLICATION_ETHICS_POLICY}</pre>
       </article>
       <div className="ethics-notice"><strong>투고 책임자 확인</strong><p>투고 책임자는 논문에 등록할 모든 저자에게 규정 전문을 공유하고 동의를 받아야 합니다. 동의 시각과 다음 단계에서 등록하는 저자 명단은 논문 기록에 함께 보존됩니다.</p></div>
+      <section className="ethics-author-signatories" aria-labelledby="ethics-author-signatories-title">
+        <header>
+          <div><small>ALL AUTHORS</small><h3 id="ethics-author-signatories-title">연구윤리 서약 연구자 명단</h3><p>논문에 참여한 연구자 전원의 이름을 빠짐없이 입력해 주세요.</p></div>
+          <label><span>총 연구자 수</span><select value={authors.length} onChange={(event) => setEthicsAuthorCount(Number(event.target.value))}>{AUTHOR_COUNT_OPTIONS.map((count) => <option value={count} key={count}>{count}명</option>)}</select></label>
+        </header>
+        <div className="ethics-author-name-grid">
+          {authors.map((author, index) => <label key={index}><span>{authors.length === 1 ? "단독저자" : `제${index + 1}저자`} 이름</span><input value={author.nameKo} onChange={(event) => updateEthicsAuthorName(index, event.target.value)} placeholder="한글 성명 입력" required /></label>)}
+        </div>
+        <p className="ethics-author-help">입력한 이름은 다음 단계의 저자 구성에 그대로 반영됩니다. 이름이나 인원수를 변경하면 서약 동의를 다시 확인해야 합니다.</p>
+      </section>
       <div className="ethics-checklist ethics-final-agreement">
-        <label><input type="checkbox" checked={ethicsAgreed} onChange={(event) => setEthicsAgreement(event.target.checked)} /><span><strong>연구·출판윤리규정에 동의합니다.</strong>투고 책임자는 규정 전문을 확인했으며, 다음 단계에 등록할 모든 저자에게 규정을 안내하고 동의를 받았음을 확인합니다.</span></label>
+        <label><input type="checkbox" checked={ethicsAgreed} disabled={!ethicsAuthorNamesComplete} onChange={(event) => setEthicsAgreement(event.target.checked)} /><span><strong>위에 이름을 작성한 연구자 전원이 연구·출판윤리규정에 동의합니다.</strong>투고 책임자는 규정 전문을 확인했으며, 입력한 모든 연구자에게 규정을 안내하고 동의를 받았음을 확인합니다.</span></label>
       </div>
       <div className="wizard-actions"><button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(false)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" type="button" disabled={!ethicsComplete || busy} onClick={() => goToStep(2)}>동의하고 저자 구성 입력 <span>→</span></button></div>
     </section>}
