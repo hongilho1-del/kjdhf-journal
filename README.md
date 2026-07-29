@@ -73,6 +73,7 @@ Supabase
 - `20260729050000_three_reviewer_workflow.sql`: 논문별 심사위원 3명 배정 규칙
 - `20260729063000_admin_username_login.sql`: 관리자 사용자명과 Auth 계정의 비공개 매핑
 - `20260729150000_author_review_results.sql`: 저자용 익명 심사결과 조회 RPC
+- `20260729162000_signup_profile_metadata.sql`: 단계형 회원가입 기본정보 저장
 
 ## 개발환경 실행
 

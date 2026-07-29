@@ -69,6 +69,21 @@ test("authenticated users get a My Page with personal manuscript management", as
   assert.match(author, /최종원고 제출/);
 });
 
+test("signup follows four JAMS-style steps and keeps new members pending approval", async () => {
+  const [panel, migration] = await Promise.all([
+    readFile(new URL("../components/auth-panel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260729162000_signup_profile_metadata.sql", import.meta.url), "utf8"),
+  ]);
+  for (const label of ["회원선택", "약관동의", "회원정보입력", "가입완료"]) assert.match(panel, new RegExp(label));
+  for (const field of ["fullName", "affiliation", "email", "passwordConfirm", "phone", "researchFields"]) assert.match(panel, new RegExp(`name="${field}"`));
+  assert.match(panel, /Object\.values\(agreements\)\.every\(Boolean\)/);
+  assert.match(panel, /관리자의 승인이 완료되면 로그인/);
+  assert.match(migration, /research_fields/);
+  assert.match(migration, /'AUTHOR'/);
+  assert.match(migration, /false/);
+  assert.doesNotMatch(panel, /service[_-]?role/i);
+});
+
 test("connects JAMS-style submission, e-Journal, KCI similarity, and anonymous review results", async () => {
   const [app, home, submission, ejournal, result, migration] = await Promise.all([
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
