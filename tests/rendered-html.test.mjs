@@ -301,18 +301,17 @@ test("admins can publish multiple HWPX templates and authors can download each f
 });
 
 test("authors can upload HWPX files for initial, revision, and final manuscript submission", async () => {
-  const [submission, dashboard, files, buckets, migration] = await Promise.all([
+  const [submission, dashboard, files, migration] = await Promise.all([
     readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/supabase/files.ts", import.meta.url), "utf8"),
-    readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
   ]);
   assert.match(files, /MANUSCRIPT_FILE_ACCEPT[\s\S]*\.hwpx/);
   assert.match(submission, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /PDF, Word, HWP, HWPX/);
-  assert.match(buckets, /application\/vnd\.hancom\.hwpx/);
+  assert.match(migration, /application\/vnd\.hancom\.hwpx/);
   assert.match(migration, /where id in \('manuscripts', 'revisions', 'final-files'\)/);
 });
 
