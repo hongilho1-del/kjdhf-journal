@@ -10,6 +10,7 @@ export type Manuscript = Tables<"manuscripts">;
 export type Assignment = Tables<"reviewer_assignments">;
 export type Review = Tables<"reviews">;
 export type BoardPost = Tables<"board_posts">;
+export type JournalTemplateFile = Tables<"journal_template_files">;
 export type BoardCategory = "NOTICE" | "EVENT";
 
 const LEGACY_JOURNAL_NAME = "한국 디지털 건강체력학회지";

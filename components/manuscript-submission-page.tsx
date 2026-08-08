@@ -5,7 +5,7 @@ import { FileSubmissionModal, openAuthorReviewResult } from "@/components/author
 import { STATUS_LABELS, formatDate, getErrorMessage, splitKeywords, type Manuscript, type Profile } from "@/lib/journal";
 import { ETHICS_POLICY_VERSION, RESEARCH_PUBLICATION_ETHICS_POLICY } from "@/lib/policies";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { uploadJournalFile } from "@/lib/supabase/files";
+import { MANUSCRIPT_FILE_ACCEPT, uploadJournalFile } from "@/lib/supabase/files";
 
 type SubmissionTab = "new" | "revision" | "final" | "status";
 type WizardStep = 1 | 2 | 3 | 4;
@@ -455,8 +455,8 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
       <div className="wizard-heading"><small>STEP 04</small><h2>원고파일 확인 및 최종 제출</h2><p>심사용 익명화 원고에는 저자명, 소속, 이메일, 감사의 글 등 식별정보가 없어야 합니다.</p></div>
       <div className="submission-review"><div><span>저자 구성</span><strong>{authorship === "SOLE" ? "단독저자" : `공동저자 ${authors.length}명`}</strong></div><div><span>교신저자</span><strong>{authors[correspondingIndex]?.nameKo}</strong><small>{authors[correspondingIndex]?.email}</small></div><div className="wide"><span>논문제목</span><strong>{paper.titleKo}</strong><small>{paper.titleEn}</small></div></div>
       <form className="wizard-form file-step-form" onSubmit={handleFinalSubmit}>
-        <label>원고파일<input name="originalFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>저자정보가 포함된 편집용 원고</small></label>
-        <label>익명화 원고<input name="anonymizedFile" type="file" accept=".pdf,.doc,.docx,.hwp" required /><small>심사위원에게 제공되는 비식별 원고</small></label>
+        <label>원고파일<input name="originalFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 저자정보가 포함된 편집용 원고</small></label>
+        <label>익명화 원고<input name="anonymizedFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 심사위원에게 제공되는 비식별 원고</small></label>
         <label className="final-consent wide"><input type="checkbox" checked={copyrightAgreed} onChange={(event) => setCopyrightAgreed(event.target.checked)} required /><span>모든 저자를 대표하여 게재 시 저작권 및 이용조건에 동의합니다.</span></label>
         <div className="wizard-actions wide"><button className="secondary-button" type="button" disabled={busy} onClick={() => goToStep(3)}>← 이전</button>{adminTestMode && <button className="admin-test-finish-button" type="button" disabled={busy} onClick={onMyPage}>화면 점검 완료 · My Page</button>}<button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"} <span>→</span></button></div>
       </form>

@@ -3,6 +3,8 @@ import { getSupabaseClient } from "./client";
 
 export type JournalFileKind = Database["public"]["Enums"]["manuscript_file_kind"];
 
+export const MANUSCRIPT_FILE_ACCEPT = ".pdf,.doc,.docx,.hwp,.hwpx,application/vnd.hancom.hwpx";
+
 export interface JournalFileResult {
   id: string;
   bucket_id: string;

@@ -2,10 +2,10 @@
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('manuscripts', 'manuscripts', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp']),
-  ('revisions', 'revisions', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp']),
+  ('manuscripts', 'manuscripts', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp', 'application/vnd.hancom.hwpx', 'application/zip', 'application/octet-stream']),
+  ('revisions', 'revisions', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp', 'application/vnd.hancom.hwpx', 'application/zip', 'application/octet-stream']),
   ('review-files', 'review-files', false, 20971520, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']),
-  ('final-files', 'final-files', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp']),
+  ('final-files', 'final-files', false, 52428800, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/haansofthwp', 'application/x-hwp', 'application/vnd.hancom.hwpx', 'application/zip', 'application/octet-stream']),
   ('published', 'published', true, 52428800, array['application/pdf'])
 on conflict (id) do update
 set public = excluded.public,

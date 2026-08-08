@@ -29,11 +29,11 @@ test("server-renders the Korean digital health and fitness journal", async () =>
   assert.match(html, /logos\/kjdhp-journal-logo\.png/);
   assert.match(html, /logos\/kjdhp-journal-logo\.png\?v=1/);
   assert.match(html, /images\/kjdhp-vol01-cover\.png/);
-  assert.match(html, /논문 투고규정 및 원고작성요령/);
-  assert.match(html, /심사 규정/);
+  assert.match(html, /투고규정·원고작성요령/);
+  assert.match(html, /심사규정/);
   assert.match(html, /편집위원회/);
-  assert.match(html, /연구 윤리위원회/);
-  assert.match(html, /논문 양식 다운로드/);
+  assert.match(html, /연구·출판윤리/);
+  assert.match(html, /교정·검수 지원/);
 });
 
 test("journal information links use the supplied logo and open five dedicated views in author workflow order", async () => {
@@ -45,18 +45,20 @@ test("journal information links use the supplied logo and open five dedicated vi
   ]);
   assert.match(home, /logos\/kjdhp-journal-logo\.png/);
   assert.doesNotMatch(home, /jams-about-mark/);
-  const orderedPages = ["submission-guidelines", "review-guidelines", "research-ethics", "editorial-board", "manuscript-template"];
+  const orderedPages = ["submission-guidelines", "review-guidelines", "research-ethics", "editorial-board", "proofreading-support"];
   for (const page of orderedPages) {
     assert.match(pages, new RegExp(page));
   }
   for (let index = 1; index < orderedPages.length; index += 1) {
     assert.ok(pages.indexOf(`id: "${orderedPages[index - 1]}"`) < pages.indexOf(`id: "${orderedPages[index]}"`));
   }
-  for (const label of ["논문 투고규정 및 원고작성요령", "심사 규정", "연구 윤리위원회", "편집위원회", "논문 양식 다운로드"]) assert.match(pages, new RegExp(label));
+  for (const label of ["투고규정·원고작성요령", "심사규정", "연구·출판윤리", "편집위원회", "교정·검수 지원"]) assert.match(pages, new RegExp(label));
+  const publicNavigation = pages.match(/export const journalInformationNavigation = \[([\s\S]*?)\] as const;/)?.[1] ?? "";
+  assert.doesNotMatch(publicNavigation, /manuscriptTemplate/);
   assert.match(home, /journalInformationNavigation\.map/);
   assert.match(app, /isJournalInformationPage\(hashPage\)/);
   assert.match(app, /<JournalInformation page=\{view\}/);
-  assert.match(information, /논문 양식 준비 중/);
+  assert.match(information, /journal-template-library/);
 });
 
 test("authenticated users get a My Page with personal manuscript management", async () => {
@@ -212,7 +214,7 @@ test("admin can edit review-information pages without exposing them as notices",
   assert.match(management, /표 추가 \+/);
   assert.match(management, /buildJournalTableTemplate/);
   assert.match(management, /savedPageCount/);
-  assert.match(management, /journalInformationNavigation\.length/);
+  assert.match(management, /journalPageManagementNavigation\.length/);
   assert.match(information, /getJournalPageStorageTitle\(page\)/);
   assert.match(information, /<table className="journal-information-table">/);
   assert.match(information, /parseJournalContent/);
@@ -261,24 +263,57 @@ test("public boards avoid admin function errors and journal information uses one
   assert.match(home + community + boardManagement, /map\(normalizeBoardPostIdentity\)/);
 });
 
-test("admins can attach a public manuscript template and the journal page downloads it", async () => {
-  const [management, information, types, migration, app, layout] = await Promise.all([
+test("admins can publish multiple HWPX templates and authors can download each file", async () => {
+  const [management, information, types, legacyMigration, multiFileMigration, pages, app, layout] = await Promise.all([
     readFile(new URL("../components/journal-page-management.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-information.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/supabase/database.types.ts", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260729201000_journal_template_attachment.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
+    readFile(new URL("../lib/journal-pages.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(management, /name="attachment"/);
+  assert.match(management, /name="attachments"/);
+  assert.match(management, /multiple/);
+  assert.match(management, /form\.getAll\("attachments"\)/);
+  assert.match(management, /extension !== "hwpx"/);
   assert.match(management, /storage\.from\("published"\)\.upload/);
+  assert.match(management, /from\("journal_template_files"\)\.insert/);
+  assert.match(management, /from\("journal_template_files"\)\.delete/);
   assert.match(information, /getPublicUrl/);
   assert.match(information, /논문 양식 다운로드/);
-  assert.match(types, /attachment_path/);
-  assert.match(migration, /journal_template_files_admin_insert/);
-  assert.match(migration, /public\.is_admin\(\)/);
+  assert.match(information, /download=\{file\.file_name\}/);
+  assert.match(information, /from\("journal_template_files"\)/);
+  assert.match(types, /journal_template_files/);
+  assert.match(legacyMigration, /journal_template_files_admin_insert/);
+  assert.match(multiFileMigration, /create table public\.journal_template_files/);
+  assert.match(multiFileMigration, /journal_template_files_public_read/);
+  assert.match(multiFileMigration, /public\.is_admin\(\)/);
+  assert.match(multiFileMigration, /application\/vnd\.hancom\.hwpx/);
+  assert.match(multiFileMigration, /KJDHF_PAGE:proofreading-support/);
+  assert.match(multiFileMigration, /자율적인 선택/);
+  assert.match(multiFileMigration, /이용을 강제하는 것이 아닙니다/);
+  assert.match(pages, /proofreading-support/);
+  assert.match(pages, /journalPageManagementNavigation/);
   assert.match(app, /institute-header-mark/);
   assert.match(layout, /rel="shortcut icon"/);
+});
+
+test("authors can upload HWPX files for initial, revision, and final manuscript submission", async () => {
+  const [submission, dashboard, files, buckets, migration] = await Promise.all([
+    readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/supabase/files.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260728165955_storage_buckets.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(files, /MANUSCRIPT_FILE_ACCEPT[\s\S]*\.hwpx/);
+  assert.match(submission, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
+  assert.match(dashboard, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
+  assert.match(dashboard, /PDF, Word, HWP, HWPX/);
+  assert.match(buckets, /application\/vnd\.hancom\.hwpx/);
+  assert.match(migration, /where id in \('manuscripts', 'revisions', 'final-files'\)/);
 });
 
 test("keeps privileged credentials out of frontend source", async () => {
