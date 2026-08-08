@@ -285,6 +285,7 @@ test("admins can publish multiple HWPX templates and authors can download each f
   assert.match(information, /논문 양식 다운로드/);
   assert.match(information, /download=\{file\.file_name\}/);
   assert.match(information, /from\("journal_template_files"\)/);
+  assert.match(information, /showsTemplateFiles && <section[\s\S]*\{content && <JournalContent/);
   assert.match(types, /journal_template_files/);
   assert.match(legacyMigration, /journal_template_files_admin_insert/);
   assert.match(multiFileMigration, /create table public\.journal_template_files/);
