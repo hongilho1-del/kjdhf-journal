@@ -316,6 +316,34 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
   assert.match(migration, /where id in \('manuscripts', 'revisions', 'final-files'\)/);
 });
 
+test("administrators can export Excel ledgers and complete per-manuscript ZIP backups", async () => {
+  const [dashboard, panel, exporter, packageJson] = await Promise.all([
+    readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/admin-data-export.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/admin-export.ts", import.meta.url), "utf8"),
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ]);
+  assert.match(dashboard, /profile\.role === "ADMIN"[\s\S]*자료 내보내기/);
+  assert.match(dashboard, /<AdminDataExport manuscripts=\{manuscripts\}/);
+  assert.match(panel, /논문투고대장 Excel 다운로드/);
+  assert.match(panel, /심사자대장 Excel 다운로드/);
+  assert.match(panel, /선택 논문 전체자료 ZIP 다운로드/);
+  for (const table of ["manuscripts", "authors", "profiles", "reviewer_assignments", "reviews", "editorial_decisions", "manuscript_files", "issues", "published_articles", "manuscript_status_history"]) assert.match(panel, new RegExp(`from\\("${table}"\\)`));
+  assert.match(panel, /getJournalFileUrl\(file\.id\)/);
+  assert.match(panel, /\.gte\("submitted_at"[\s\S]*\.lt\("submitted_at"/);
+  assert.match(exporter, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
+  assert.match(exporter, /autoFilter/);
+  assert.match(exporter, /ySplit="3"/);
+  assert.match(exporter, /관리번호[\s\S]*투고일[\s\S]*담당편집위원[\s\S]*최종판정[\s\S]*게재권호/);
+  assert.match(exporter, /심사의뢰일[\s\S]*수락·거절일[\s\S]*심사완료일[\s\S]*심사판정[\s\S]*심사차수/);
+  assert.match(exporter, /01_논문정보\/저자목록\.csv/);
+  assert.match(exporter, /02_심사\/심사결과\.json/);
+  assert.match(exporter, /03_편집\/편집판정\.json/);
+  assert.match(exporter, /04_파일\/\$\{folder\}/);
+  assert.match(exporter, /zipSync/);
+  assert.match(packageJson, /"fflate": "0\.7\.4"/);
+});
+
 test("keeps privileged credentials out of frontend source", async () => {
   const files = await Promise.all([
     readFile(new URL("../components/journal-app.tsx", import.meta.url), "utf8"),

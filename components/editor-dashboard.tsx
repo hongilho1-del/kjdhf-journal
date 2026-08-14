@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { BoardManagement } from "@/components/board-management";
+import { AdminDataExport } from "@/components/admin-data-export";
 import { JournalPageManagement } from "@/components/journal-page-management";
 import {
   RECOMMENDATION_LABELS,
@@ -53,7 +54,7 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [selected, setSelected] = useState<Manuscript | null>(null);
-  const [tab, setTab] = useState<"manuscripts" | "users" | "boards" | "journal-pages" | "issues">("manuscripts");
+  const [tab, setTab] = useState<"manuscripts" | "users" | "boards" | "journal-pages" | "issues" | "exports">("manuscripts");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -98,13 +99,14 @@ export function EditorDashboard({ profile }: { profile: Profile }) {
   return <div className="dashboard-stack">
     <section className="dashboard-hero editor-hero"><div><p>{profile.role} DASHBOARD</p><h1>편집업무 통합현황</h1><span>접수, 심사위원 배정, 심사결과와 발행 준비를 관리합니다.</span></div><div className="dashboard-date"><span>오늘</span><strong>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date())}</strong></div></section>
     <section className="metric-grid admin-metrics"><Metric label="전체 투고" value={stats.all} /><Metric label="신규·형식검토" value={stats.new} tone="alert" /><Metric label="배정 대기" value={stats.assignment} /><Metric label="심사 중" value={stats.reviewing} /><Metric label="수정 중" value={stats.revision} /><Metric label="게재 단계" value={stats.accepted} tone="success" /><Metric label="게재불가" value={stats.rejected} tone="danger" /><Metric label="투고철회" value={stats.withdrawn} tone="danger" />{profile.role === "ADMIN" && <Metric label="회원 승인대기" value={profiles.filter((person) => !person.is_active).length} tone="alert" />}</section>
-    <nav className="workspace-tabs" aria-label="편집관리 메뉴"><button className={tab === "manuscripts" ? "active" : ""} onClick={() => setTab("manuscripts")}>논문 진행현황</button>{profile.role === "ADMIN" && <><button className={tab === "users" ? "active" : ""} onClick={() => setTab("users")}>가입·권한 관리</button><button className={tab === "boards" ? "active" : ""} onClick={() => setTab("boards")}>공지·학술대회 관리</button><button className={tab === "journal-pages" ? "active" : ""} onClick={() => setTab("journal-pages")}>학술지 안내 관리</button><button className={tab === "issues" ? "active" : ""} onClick={() => setTab("issues")}>발행호 관리</button></>}</nav>
+    <nav className="workspace-tabs" aria-label="편집관리 메뉴"><button className={tab === "manuscripts" ? "active" : ""} onClick={() => setTab("manuscripts")}>논문 진행현황</button>{profile.role === "ADMIN" && <><button className={tab === "users" ? "active" : ""} onClick={() => setTab("users")}>가입·권한 관리</button><button className={tab === "boards" ? "active" : ""} onClick={() => setTab("boards")}>공지·학술대회 관리</button><button className={tab === "journal-pages" ? "active" : ""} onClick={() => setTab("journal-pages")}>학술지 안내 관리</button><button className={tab === "issues" ? "active" : ""} onClick={() => setTab("issues")}>발행호 관리</button><button className={tab === "exports" ? "active" : ""} onClick={() => setTab("exports")}>자료 내보내기</button></>}</nav>
     {message && <div className="notice-box" role="status">{message}</div>}
     {tab === "manuscripts" && <ManuscriptBoard loading={loading} manuscripts={manuscripts} assignments={assignments} profiles={profiles} onSelect={setSelected} />}
     {tab === "users" && profile.role === "ADMIN" && <UserManagement profiles={profiles} profileRoles={profileRoles} currentUserId={profile.id} onChanged={loadData} />}
     {tab === "boards" && profile.role === "ADMIN" && <BoardManagement />}
     {tab === "journal-pages" && profile.role === "ADMIN" && <JournalPageManagement profile={profile} />}
     {tab === "issues" && profile.role === "ADMIN" && <IssueManagement issues={issues} onChanged={loadData} />}
+    {tab === "exports" && profile.role === "ADMIN" && <AdminDataExport manuscripts={manuscripts} />}
     {selected && <EditorialDetail manuscript={selected} profiles={profiles} profileRoles={profileRoles} assignments={assignments} reviews={reviews} issues={issues} isAdmin={profile.role === "ADMIN"} onClose={() => setSelected(null)} onChanged={async () => { await loadData(); setSelected((current) => current ? manuscripts.find((item) => item.id === current.id) ?? current : null); }} />}
   </div>;
 }

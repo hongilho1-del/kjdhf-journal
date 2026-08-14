@@ -2522,6 +2522,26 @@ footer button { color: inherit; }
 .wizard-complete p strong { color: var(--forest-2); }
 .assignment-guide { margin: 0; padding: 11px 12px; background: #edf3f7; color: #526879; font-size: 9px; line-height: 1.65; }
 
+.admin-export-workspace { overflow: hidden; }
+.admin-export-period { display: flex; min-height: 82px; padding: 18px 22px; align-items: end; gap: 12px; border-bottom: 1px solid var(--line); background: #f3f6f8; }
+.admin-export-period label { display: grid; gap: 7px; color: #455564; font-size: 9px; font-weight: 850; }
+.admin-export-period input { min-width: 170px; min-height: 42px; padding: 0 12px; border: 1px solid #bcc8d1; background: white; color: var(--ink); font: inherit; }
+.admin-export-period > span { padding-bottom: 13px; color: var(--muted); }
+.admin-export-period > strong { margin-left: auto; padding: 11px 14px; background: var(--ink); color: white; font-size: 11px; }
+.admin-export-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-left: 1px solid var(--line); }
+.admin-export-grid article { display: flex; min-height: 310px; padding: 28px 24px; align-items: flex-start; flex-direction: column; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.admin-export-grid article > span { color: var(--forest-2); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+.admin-export-grid h3 { margin: 13px 0 11px; font-size: 20px; letter-spacing: -.04em; }
+.admin-export-grid p { margin: 0 0 22px; color: var(--muted); font-size: 10px; line-height: 1.75; }
+.admin-export-grid .button { width: 100%; min-height: 48px; margin-top: auto; justify-content: center; font-size: 10px; }
+.admin-export-grid .button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-export-backup label { display: grid; width: 100%; margin: auto 0 12px; gap: 7px; color: #455564; font-size: 9px; font-weight: 850; }
+.admin-export-backup select { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid #bcc8d1; background: white; color: var(--ink); font: inherit; }
+.admin-export-note { display: grid; padding: 18px 22px; grid-template-columns: 90px 1fr; align-items: center; gap: 18px; border-left: 4px solid var(--orange); background: #fff7ed; }
+.admin-export-note strong { color: #9b5508; font-size: 11px; }
+.admin-export-note p { margin: 0; color: #725a47; font-size: 9px; line-height: 1.7; }
+.admin-export-workspace > .notice-box { margin: 18px 22px 22px; }
+
 .review-result-page { min-height: 780px; padding-bottom: 90px; background: #f2f6f9; }
 .review-result-shell { display: grid; padding-top: 26px; gap: 22px; }
 .review-result-loading { min-height: 500px; padding: 100px; background: #f2f6f9; text-align: center; color: var(--muted); }
@@ -2566,6 +2586,8 @@ footer button { color: inherit; }
   .submission-side { grid-template-columns: repeat(2, 1fr); }
   .issue-card { grid-template-columns: 120px 1fr; }
   .issue-cover-image { width: 120px; }
+  .admin-export-grid { grid-template-columns: 1fr; }
+  .admin-export-grid article { min-height: 250px; }
 }
 
 @media (max-width: 640px) {
@@ -2608,6 +2630,11 @@ footer button { color: inherit; }
   .wizard-actions { align-items: stretch; flex-direction: column-reverse; }
   .wizard-actions .button, .wizard-actions .secondary-button, .wizard-actions .draft-save-button { width: 100%; }
   .author-editor-card .wizard-form { padding: 16px; }
+  .admin-export-period { align-items: stretch; flex-direction: column; }
+  .admin-export-period input { width: 100%; min-width: 0; }
+  .admin-export-period > span { display: none; }
+  .admin-export-period > strong { margin-left: 0; text-align: center; }
+  .admin-export-note { grid-template-columns: 1fr; gap: 6px; }
 }
 .assignment-heading { display: flex; margin-bottom: 16px; align-items: center; justify-content: space-between; }
 .assignment-heading h3 { margin: 0; }
