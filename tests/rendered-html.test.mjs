@@ -307,10 +307,11 @@ test("admins can publish multiple HWPX templates and authors can download each f
 });
 
 test("authors can upload HWPX files for initial, revision, and final manuscript submission", async () => {
-  const [submission, dashboard, files, migration] = await Promise.all([
+  const [submission, dashboard, files, fileAccess, migration] = await Promise.all([
     readFile(new URL("../components/manuscript-submission-page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/author-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/supabase/files.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/functions/file-access/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
   ]);
   assert.match(files, /MANUSCRIPT_FILE_ACCEPT[\s\S]*\.hwpx/);
@@ -324,6 +325,10 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
   assert.match(dashboard, /파일명 : 저자-제목 순으로 작성해 주세요/);
   assert.match(dashboard, /const uploadedOriginal = await uploadJournalFile\(original, manuscript\.id, "ORIGINAL", 1\)/);
   assert.match(dashboard, /createJournalReviewCopy\(original, uploadedOriginal, manuscript\.id, 1\)/);
+  assert.match(fileAccess, /from\("profile_roles"\)/);
+  assert.match(fileAccess, /roles\.has\("AUTHOR"\) && manuscript\.created_by === userId/);
+  assert.match(fileAccess, /!authorized && roles\.has\("REVIEWER"\)/);
+  assert.doesNotMatch(fileAccess, /else if \(role === "AUTHOR"/);
   assert.match(migration, /application\/vnd\.hancom\.hwpx/);
   assert.match(migration, /where id in \('manuscripts', 'revisions', 'final-files'\)/);
 });

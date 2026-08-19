@@ -60,7 +60,15 @@ Deno.serve(async (request) => {
     .eq("id", userId)
     .maybeSingle();
   if (!profile?.is_active) return json({ error: "Active profile required" }, 403);
-  const role = profile.role as AppRole;
+  const { data: grantedRoles, error: rolesError } = await service
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", userId);
+  if (rolesError) return json({ error: "Role lookup failed" }, 500);
+  const roles = new Set<AppRole>([
+    profile.role as AppRole,
+    ...(grantedRoles ?? []).map((item) => item.role as AppRole),
+  ]);
 
   const contentType = request.headers.get("content-type") ?? "";
 
@@ -87,14 +95,16 @@ Deno.serve(async (request) => {
     if (!manuscript) return json({ error: "Manuscript not found" }, 404);
 
     let authorized = false;
-    if (role === "ADMIN" || role === "EDITOR") {
-      authorized = fileKind !== "PUBLISHED" || role === "ADMIN";
-    } else if (role === "AUTHOR" && manuscript.created_by === userId) {
+    if (roles.has("ADMIN") || roles.has("EDITOR")) {
+      authorized = fileKind !== "PUBLISHED" || roles.has("ADMIN");
+    }
+    if (!authorized && roles.has("AUTHOR") && manuscript.created_by === userId) {
       authorized =
         (["ORIGINAL", "ANONYMIZED"].includes(fileKind) && manuscript.status === "DRAFT") ||
         (fileKind === "REVISION" && manuscript.status === "REVISION_REQUESTED") ||
         (fileKind === "FINAL" && ["ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(manuscript.status));
-    } else if (role === "REVIEWER" && fileKind === "REVIEW_ATTACHMENT") {
+    }
+    if (!authorized && roles.has("REVIEWER") && fileKind === "REVIEW_ATTACHMENT") {
       const { data: assignment } = await service
         .from("reviewer_assignments")
         .select("id")
@@ -151,10 +161,11 @@ Deno.serve(async (request) => {
   const manuscript = Array.isArray(fileRecord.manuscripts)
     ? fileRecord.manuscripts[0]
     : fileRecord.manuscripts;
-  let authorized = role === "EDITOR" || role === "ADMIN";
-  if (role === "AUTHOR") {
+  let authorized = roles.has("EDITOR") || roles.has("ADMIN");
+  if (!authorized && roles.has("AUTHOR")) {
     authorized = manuscript?.created_by === userId && fileRecord.file_kind !== "REVIEW_ATTACHMENT";
-  } else if (role === "REVIEWER") {
+  }
+  if (!authorized && roles.has("REVIEWER")) {
     if (fileRecord.file_kind === "REVIEW_ATTACHMENT") {
       authorized = fileRecord.uploaded_by === userId;
     } else if (fileRecord.is_anonymized && ["ANONYMIZED", "REVISION"].includes(fileRecord.file_kind)) {
