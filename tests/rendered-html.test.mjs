@@ -314,8 +314,9 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
     readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
   ]);
   assert.match(files, /MANUSCRIPT_FILE_ACCEPT[\s\S]*\.hwpx/);
-  assert.match(files, /storage\.from\(rule\.bucket\)\.upload/);
-  assert.match(files, /from\("manuscript_files"\)\.insert/);
+  assert.match(files, /supabase\.auth\.getSession\(\)/);
+  assert.match(files, /Authorization: `Bearer \$\{sessionData\.session\.access_token\}`/);
+  assert.match(files, /functions\.invoke\("file-access"/);
   assert.match(submission, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /PDF, Word, HWP, HWPX/);

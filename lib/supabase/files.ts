@@ -5,14 +5,14 @@ export type JournalFileKind = Database["public"]["Enums"]["manuscript_file_kind"
 
 export const MANUSCRIPT_FILE_ACCEPT = ".pdf,.doc,.docx,.hwp,.hwpx,application/vnd.hancom.hwpx";
 
-const FILE_UPLOAD_RULES = {
-  ORIGINAL: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: false },
-  ANONYMIZED: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: true },
-  REVISION: { bucket: "revisions", maxBytes: 52_428_800, anonymized: true },
-  FINAL: { bucket: "final-files", maxBytes: 52_428_800, anonymized: false },
-  REVIEW_ATTACHMENT: { bucket: "review-files", maxBytes: 20_971_520, anonymized: false },
-  PUBLISHED: { bucket: "published", maxBytes: 52_428_800, anonymized: false },
-} satisfies Record<JournalFileKind, { bucket: string; maxBytes: number; anonymized: boolean }>;
+const FILE_SIZE_LIMITS = {
+  ORIGINAL: 52_428_800,
+  ANONYMIZED: 52_428_800,
+  REVISION: 52_428_800,
+  FINAL: 52_428_800,
+  REVIEW_ATTACHMENT: 20_971_520,
+  PUBLISHED: 52_428_800,
+} satisfies Record<JournalFileKind, number>;
 
 export interface JournalFileResult {
   id: string;
@@ -43,62 +43,34 @@ export async function uploadJournalFile(
   fileKind: JournalFileKind,
   versionNo: number,
 ) {
-  const rule = FILE_UPLOAD_RULES[fileKind];
+  const maxBytes = FILE_SIZE_LIMITS[fileKind];
   if (!Number.isInteger(versionNo) || versionNo < 1) throw new Error("파일 버전이 올바르지 않습니다.");
-  if (!file.size || file.size > rule.maxBytes) throw new Error(`파일 크기는 ${Math.floor(rule.maxBytes / 1024 / 1024)}MB 이하여야 합니다.`);
+  if (!file.size || file.size > maxBytes) throw new Error(`파일 크기는 ${Math.floor(maxBytes / 1024 / 1024)}MB 이하여야 합니다.`);
   const supabase = getSupabaseClient();
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-  const storagePath = `${manuscriptId}/${versionNo}/${crypto.randomUUID()}.${extension}`;
-  const { error: uploadError } = await supabase.storage.from(rule.bucket).upload(storagePath, file, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (!sessionData.session?.access_token) throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+  const formData = new FormData();
+  formData.set("file", file);
+  formData.set("manuscript_id", manuscriptId);
+  formData.set("file_kind", fileKind);
+  formData.set("version_no", String(versionNo));
+  const { data, error } = await supabase.functions.invoke("file-access", {
+    body: formData,
+    headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
   });
-  if (uploadError) throw uploadError;
-  const { data, error } = await supabase.from("manuscript_files").insert({
-    manuscript_id: manuscriptId,
-    bucket_id: rule.bucket,
-    storage_path: storagePath,
-    file_kind: fileKind,
-    version_no: versionNo,
-    original_name: file.name,
-    mime_type: file.type || "application/octet-stream",
-    size_bytes: file.size,
-    is_anonymized: rule.anonymized,
-  }).select("id,bucket_id,storage_path,file_kind,version_no,mime_type,size_bytes,created_at").single();
-  if (error) {
-    await supabase.storage.from(rule.bucket).remove([storagePath]);
-    throw error;
-  }
-  return data as JournalFileResult;
+  if (error) throw await functionError(error);
+  if (data?.error) throw new Error(data.error);
+  return data.file as JournalFileResult;
 }
 
 export async function createJournalReviewCopy(
   file: File,
-  uploaded: JournalFileResult,
+  _uploaded: JournalFileResult,
   manuscriptId: string,
   versionNo: number,
 ) {
-  const supabase = getSupabaseClient();
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-  const reviewPath = `${manuscriptId}/${versionNo}/${crypto.randomUUID()}.${extension}`;
-  const { error: copyError } = await supabase.storage.from("manuscripts").copy(uploaded.storage_path, reviewPath);
-  if (copyError) throw copyError;
-  const { data, error } = await supabase.from("manuscript_files").insert({
-    manuscript_id: manuscriptId,
-    bucket_id: "manuscripts",
-    storage_path: reviewPath,
-    file_kind: "ANONYMIZED",
-    version_no: versionNo,
-    original_name: file.name,
-    mime_type: file.type || "application/octet-stream",
-    size_bytes: file.size,
-    is_anonymized: true,
-  }).select("id,bucket_id,storage_path,file_kind,version_no,mime_type,size_bytes,created_at").single();
-  if (error) {
-    await supabase.storage.from("manuscripts").remove([reviewPath]);
-    throw error;
-  }
-  return data as JournalFileResult;
+  return uploadJournalFile(file, manuscriptId, "ANONYMIZED", versionNo);
 }
 
 export async function getJournalFileUrl(fileId: string) {
