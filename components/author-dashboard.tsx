@@ -206,7 +206,7 @@ export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: {
     } catch (error) { setMessage(getErrorMessage(error)); } finally { setBusy(false); }
   }
   return <div className="modal-backdrop"><section className="auth-panel file-modal" role="dialog" aria-modal="true"><button className="modal-close" type="button" onClick={onClose}>×</button><p className="panel-eyebrow">MANUSCRIPT FILE</p><h2>{title}</h2><p className="panel-description">{manuscript.manuscript_code ?? "임시저장"} · {manuscript.title_ko}</p><form className="stack-form" onSubmit={handleSubmit}>
-    {mode === "draft" ? <label>원고파일<input name="original" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 제출한 원고가 편집과 심사에 함께 사용됩니다.</small></label> : <label>{mode === "revision" ? "익명화 수정원고" : "최종 편집원고"}<input name="file" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label>}
+    {mode === "draft" ? <label><span className="file-upload-title"><b>원고파일</b><em>파일명 : 저자-제목 순으로 작성해 주세요.</em></span><input name="original" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 제출한 원고가 편집과 심사에 함께 사용됩니다.</small></label> : <label>{mode === "revision" ? "익명화 수정원고" : "최종 편집원고"}<input name="file" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label>}
     <button className="button button-primary" disabled={busy}>{busy ? "업로드 중…" : "제출"}</button>{message && <p className="form-message">{message}</p>}
   </form></section></div>;
 }

@@ -5,6 +5,15 @@ export type JournalFileKind = Database["public"]["Enums"]["manuscript_file_kind"
 
 export const MANUSCRIPT_FILE_ACCEPT = ".pdf,.doc,.docx,.hwp,.hwpx,application/vnd.hancom.hwpx";
 
+const FILE_UPLOAD_RULES = {
+  ORIGINAL: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: false },
+  ANONYMIZED: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: true },
+  REVISION: { bucket: "revisions", maxBytes: 52_428_800, anonymized: true },
+  FINAL: { bucket: "final-files", maxBytes: 52_428_800, anonymized: false },
+  REVIEW_ATTACHMENT: { bucket: "review-files", maxBytes: 20_971_520, anonymized: false },
+  PUBLISHED: { bucket: "published", maxBytes: 52_428_800, anonymized: false },
+} satisfies Record<JournalFileKind, { bucket: string; maxBytes: number; anonymized: boolean }>;
+
 export interface JournalFileResult {
   id: string;
   bucket_id: string;
@@ -20,8 +29,8 @@ async function functionError(error: unknown) {
   if (typeof error === "object" && error && "context" in error) {
     const context = error.context;
     if (context instanceof Response) {
-      const payload = await context.clone().json().catch(() => null) as { error?: string; message?: string } | null;
-      const message = payload?.error || payload?.message;
+      const payload = await context.clone().json().catch(() => null) as { error?: string; message?: string; msg?: string } | null;
+      const message = payload?.error || payload?.message || payload?.msg;
       if (message) return new Error(message);
     }
   }
@@ -34,18 +43,33 @@ export async function uploadJournalFile(
   fileKind: JournalFileKind,
   versionNo: number,
 ) {
-  const formData = new FormData();
-  formData.set("file", file);
-  formData.set("manuscript_id", manuscriptId);
-  formData.set("file_kind", fileKind);
-  formData.set("version_no", String(versionNo));
-
-  const { data, error } = await getSupabaseClient().functions.invoke("file-access", {
-    body: formData,
+  const rule = FILE_UPLOAD_RULES[fileKind];
+  if (!Number.isInteger(versionNo) || versionNo < 1) throw new Error("파일 버전이 올바르지 않습니다.");
+  if (!file.size || file.size > rule.maxBytes) throw new Error(`파일 크기는 ${Math.floor(rule.maxBytes / 1024 / 1024)}MB 이하여야 합니다.`);
+  const supabase = getSupabaseClient();
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
+  const storagePath = `${manuscriptId}/${versionNo}/${crypto.randomUUID()}.${extension}`;
+  const { error: uploadError } = await supabase.storage.from(rule.bucket).upload(storagePath, file, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
   });
-  if (error) throw await functionError(error);
-  if (data?.error) throw new Error(data.error);
-  return data.file as JournalFileResult;
+  if (uploadError) throw uploadError;
+  const { data, error } = await supabase.from("manuscript_files").insert({
+    manuscript_id: manuscriptId,
+    bucket_id: rule.bucket,
+    storage_path: storagePath,
+    file_kind: fileKind,
+    version_no: versionNo,
+    original_name: file.name,
+    mime_type: file.type || "application/octet-stream",
+    size_bytes: file.size,
+    is_anonymized: rule.anonymized,
+  }).select("id,bucket_id,storage_path,file_kind,version_no,mime_type,size_bytes,created_at").single();
+  if (error) {
+    await supabase.storage.from(rule.bucket).remove([storagePath]);
+    throw error;
+  }
+  return data as JournalFileResult;
 }
 
 export async function createJournalReviewCopy(

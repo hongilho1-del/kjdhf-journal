@@ -314,10 +314,13 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
     readFile(new URL("../supabase/migrations/20260809090000_multiple_hwpx_templates_and_proofreading_support.sql", import.meta.url), "utf8"),
   ]);
   assert.match(files, /MANUSCRIPT_FILE_ACCEPT[\s\S]*\.hwpx/);
+  assert.match(files, /storage\.from\(rule\.bucket\)\.upload/);
+  assert.match(files, /from\("manuscript_files"\)\.insert/);
   assert.match(submission, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /PDF, Word, HWP, HWPX/);
   assert.doesNotMatch(dashboard, /name="anonymized"/);
+  assert.match(dashboard, /파일명 : 저자-제목 순으로 작성해 주세요/);
   assert.match(dashboard, /const uploadedOriginal = await uploadJournalFile\(original, manuscript\.id, "ORIGINAL", 1\)/);
   assert.match(dashboard, /createJournalReviewCopy\(original, uploadedOriginal, manuscript\.id, 1\)/);
   assert.match(migration, /application\/vnd\.hancom\.hwpx/);
