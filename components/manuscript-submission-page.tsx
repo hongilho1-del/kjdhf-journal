@@ -5,7 +5,7 @@ import { FileSubmissionModal, openAuthorReviewResult } from "@/components/author
 import { STATUS_LABELS, formatDate, getErrorMessage, splitKeywords, type Manuscript, type Profile } from "@/lib/journal";
 import { ETHICS_POLICY_VERSION, RESEARCH_PUBLICATION_ETHICS_POLICY } from "@/lib/policies";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { MANUSCRIPT_FILE_ACCEPT, uploadJournalFile } from "@/lib/supabase/files";
+import { MANUSCRIPT_FILE_ACCEPT, createJournalReviewCopy, uploadJournalFile } from "@/lib/supabase/files";
 
 type SubmissionTab = "new" | "revision" | "final" | "status";
 type WizardStep = 1 | 2 | 3 | 4;
@@ -356,8 +356,8 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
       if (consentError) throw consentError;
 
       setMessage("원고파일을 안전하게 업로드하고 있습니다…");
-      await uploadJournalFile(original, manuscriptId, "ORIGINAL", 1);
-      await uploadJournalFile(original, manuscriptId, "ANONYMIZED", 1);
+      const uploadedOriginal = await uploadJournalFile(original, manuscriptId, "ORIGINAL", 1);
+      await createJournalReviewCopy(original, uploadedOriginal, manuscriptId, 1);
       const { error: submitError } = await supabase.rpc("submit_manuscript", { target_manuscript_id: manuscriptId });
       if (submitError) throw submitError;
       const { data: submitted } = await supabase.from("manuscripts").select("manuscript_code").eq("id", manuscriptId).single();

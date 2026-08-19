@@ -11,7 +11,7 @@ import {
   type Profile,
 } from "@/lib/journal";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { MANUSCRIPT_FILE_ACCEPT, uploadJournalFile } from "@/lib/supabase/files";
+import { MANUSCRIPT_FILE_ACCEPT, createJournalReviewCopy, uploadJournalFile } from "@/lib/supabase/files";
 
 type AuthorDecision = { decision: keyof typeof DECISION_LABELS; author_letter: string; round_no: number; decided_at: string };
 type AuthorHistory = { from_status: keyof typeof STATUS_LABELS | null; to_status: keyof typeof STATUS_LABELS; note: string | null; changed_at: string };
@@ -190,8 +190,8 @@ export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: {
       if (mode === "draft") {
         const original = form.get("original");
         if (!(original instanceof File) || !original.size) throw new Error("원고파일을 선택해 주세요.");
-        await uploadJournalFile(original, manuscript.id, "ORIGINAL", 1);
-        await uploadJournalFile(original, manuscript.id, "ANONYMIZED", 1);
+        const uploadedOriginal = await uploadJournalFile(original, manuscript.id, "ORIGINAL", 1);
+        await createJournalReviewCopy(original, uploadedOriginal, manuscript.id, 1);
         const { error } = await getSupabaseClient().rpc("submit_manuscript", { target_manuscript_id: manuscript.id }); if (error) throw error;
       } else {
         const file = form.get("file"); if (!(file instanceof File) || !file.size) throw new Error("파일을 선택해 주세요.");
