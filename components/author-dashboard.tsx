@@ -188,10 +188,10 @@ export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: {
     setBusy(true); setMessage("");
     try {
       if (mode === "draft") {
-        const original = form.get("original"); const anonymized = form.get("anonymized");
-        if (!(original instanceof File) || !original.size || !(anonymized instanceof File) || !anonymized.size) throw new Error("두 파일을 모두 선택해 주세요.");
+        const original = form.get("original");
+        if (!(original instanceof File) || !original.size) throw new Error("원고파일을 선택해 주세요.");
         await uploadJournalFile(original, manuscript.id, "ORIGINAL", 1);
-        await uploadJournalFile(anonymized, manuscript.id, "ANONYMIZED", 1);
+        await uploadJournalFile(original, manuscript.id, "ANONYMIZED", 1);
         const { error } = await getSupabaseClient().rpc("submit_manuscript", { target_manuscript_id: manuscript.id }); if (error) throw error;
       } else {
         const file = form.get("file"); if (!(file instanceof File) || !file.size) throw new Error("파일을 선택해 주세요.");
@@ -206,7 +206,7 @@ export function FileSubmissionModal({ manuscript, mode, onClose, onComplete }: {
     } catch (error) { setMessage(getErrorMessage(error)); } finally { setBusy(false); }
   }
   return <div className="modal-backdrop"><section className="auth-panel file-modal" role="dialog" aria-modal="true"><button className="modal-close" type="button" onClick={onClose}>×</button><p className="panel-eyebrow">MANUSCRIPT FILE</p><h2>{title}</h2><p className="panel-description">{manuscript.manuscript_code ?? "임시저장"} · {manuscript.title_ko}</p><form className="stack-form" onSubmit={handleSubmit}>
-    {mode === "draft" ? <><label>원고파일<input name="original" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label><label>익명화 원고<input name="anonymized" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label></> : <label>{mode === "revision" ? "익명화 수정원고" : "최종 편집원고"}<input name="file" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label>}
+    {mode === "draft" ? <label>원고파일<input name="original" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 제출한 원고가 편집과 심사에 함께 사용됩니다.</small></label> : <label>{mode === "revision" ? "익명화 수정원고" : "최종 편집원고"}<input name="file" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX</small></label>}
     <button className="button button-primary" disabled={busy}>{busy ? "업로드 중…" : "제출"}</button>{message && <p className="form-message">{message}</p>}
   </form></section></div>;
 }

@@ -92,14 +92,13 @@ export function ManuscriptSubmissionPage({ profile, adminTestMode = false, onMyP
       <section className="submission-main-card">
         <div className="submission-section-title"><small>AUTHOR SERVICE</small><h2>{TAB_COPY[tab].title}</h2><p>{TAB_COPY[tab].description}</p></div>
         {tab === "new" ? <div className="new-submission-guide">
-          <ol><li><span>01</span><div><strong>연구·출판윤리규정 동의</strong><p>규정 전문을 확인하고 동의한 뒤 다음 단계로 이동합니다.</p></div></li><li><span>02</span><div><strong>저자구성·교신저자 지정</strong><p>저자 수와 순서를 정하고 교신저자 1명을 지정합니다.</p></div></li><li><span>03</span><div><strong>논문·초록 및 원고 등록</strong><p>국·영문 초록을 입력하고 익명화 원고를 제출합니다.</p></div></li></ol>
+          <ol><li><span>01</span><div><strong>연구·출판윤리규정 동의</strong><p>규정 전문을 확인하고 동의한 뒤 다음 단계로 이동합니다.</p></div></li><li><span>02</span><div><strong>저자구성·교신저자 지정</strong><p>저자 수와 순서를 정하고 교신저자 1명을 지정합니다.</p></div></li><li><span>03</span><div><strong>논문·초록 및 원고 등록</strong><p>국·영문 초록과 원고파일을 등록합니다.</p></div></li></ol>
           <button className="button button-primary" type="button" onClick={openNewSubmission}>신규 논문 등록 시작 <span>→</span></button>
           <p className="submission-note">새 화면에서 단계별로 입력하며, 제출 전까지 이전 단계로 돌아가 내용을 확인할 수 있습니다.</p>
         </div> : <SubmissionList tab={tab} manuscripts={visible} loading={loading} onFile={(manuscript, mode) => setFileTarget({ manuscript, mode })} />}
       </section>
       <aside className="submission-side">
         <article><small>BEFORE SUBMISSION</small><h3>논문 유사도 확인</h3><p>투고 전 KCI 논문 유사도 검사 결과를 확인해 주세요.</p><a href="https://check.kci.go.kr/" target="_blank" rel="noreferrer">KCI 논문 유사도 서비스 <span>↗</span></a></article>
-        <article><small>DOUBLE-BLIND REVIEW</small><h3>익명화 원고 안내</h3><p>저자명, 소속, 감사의 글 등 저자를 식별할 수 있는 정보를 익명 원고에서 반드시 제거해 주세요.</p></article>
       </aside>
     </div>
     {fileTarget && <FileSubmissionModal {...fileTarget} onClose={() => setFileTarget(null)} onComplete={loadManuscripts} />}
@@ -339,9 +338,8 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
     if (validationError) return showValidationError(validationError);
     const values = new FormData(event.currentTarget);
     const original = values.get("originalFile");
-    const anonymized = values.get("anonymizedFile");
-    if (!(original instanceof File) || !original.size || !(anonymized instanceof File) || !anonymized.size) {
-      setMessage("원고파일과 익명화 원고를 모두 선택해 주세요.");
+    if (!(original instanceof File) || !original.size) {
+      setMessage("원고파일을 선택해 주세요.");
       return;
     }
     if (!copyrightAgreed) {
@@ -359,7 +357,7 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
 
       setMessage("원고파일을 안전하게 업로드하고 있습니다…");
       await uploadJournalFile(original, manuscriptId, "ORIGINAL", 1);
-      await uploadJournalFile(anonymized, manuscriptId, "ANONYMIZED", 1);
+      await uploadJournalFile(original, manuscriptId, "ANONYMIZED", 1);
       const { error: submitError } = await supabase.rpc("submit_manuscript", { target_manuscript_id: manuscriptId });
       if (submitError) throw submitError;
       const { data: submitted } = await supabase.from("manuscripts").select("manuscript_code").eq("id", manuscriptId).single();
@@ -453,11 +451,10 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
     </section>}
 
     {step === 4 && <section className="wizard-panel">
-      <div className="wizard-heading"><small>STEP 04</small><h2>원고파일 확인 및 최종 제출</h2><p>심사용 익명화 원고에는 저자명, 소속, 이메일, 감사의 글 등 식별정보가 없어야 합니다.</p></div>
+      <div className="wizard-heading"><small>STEP 04</small><h2>원고파일 확인 및 최종 제출</h2></div>
       <div className="submission-review"><div><span>저자 구성</span><strong>{authorship === "SOLE" ? "단독저자" : `공동저자 ${authors.length}명`}</strong></div><div><span>교신저자</span><strong>{authors[correspondingIndex]?.nameKo}</strong><small>{authors[correspondingIndex]?.email}</small></div><div className="wide"><span>논문제목</span><strong>{paper.titleKo}</strong><small>{paper.titleEn}</small></div></div>
       <form className="wizard-form file-step-form" onSubmit={handleFinalSubmit}>
-        <label>원고파일<input name="originalFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 저자정보가 포함된 편집용 원고</small></label>
-        <label>익명화 원고<input name="anonymizedFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 심사위원에게 제공되는 비식별 원고</small></label>
+        <label className="wide">원고파일<input name="originalFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 제출한 원고가 편집과 심사에 함께 사용됩니다.</small></label>
         <label className="final-consent wide"><input type="checkbox" checked={copyrightAgreed} onChange={(event) => setCopyrightAgreed(event.target.checked)} required /><span>모든 저자를 대표하여 게재 시 저작권 및 이용조건에 동의합니다.</span></label>
         <div className="wizard-actions wide"><button className="secondary-button" type="button" disabled={busy} onClick={() => goToStep(3)}>← 이전</button>{adminTestMode && <button className="admin-test-finish-button" type="button" disabled={busy} onClick={onMyPage}>화면 점검 완료 · My Page</button>}<button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"} <span>→</span></button></div>
       </form>

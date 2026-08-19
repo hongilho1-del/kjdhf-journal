@@ -317,6 +317,9 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
   assert.match(submission, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /accept=\{MANUSCRIPT_FILE_ACCEPT\}/);
   assert.match(dashboard, /PDF, Word, HWP, HWPX/);
+  assert.doesNotMatch(dashboard, /name="anonymized"/);
+  assert.match(dashboard, /uploadJournalFile\(original, manuscript\.id, "ORIGINAL", 1\)/);
+  assert.match(dashboard, /uploadJournalFile\(original, manuscript\.id, "ANONYMIZED", 1\)/);
   assert.match(migration, /application\/vnd\.hancom\.hwpx/);
   assert.match(migration, /where id in \('manuscripts', 'revisions', 'final-files'\)/);
 });
@@ -444,7 +447,11 @@ test("administrators can inspect every workspace and bypass only wizard navigati
   assert.match(submission, /disabled=\{busy \|\| \(!adminTestMode && !ethicsComplete\)\}/);
   assert.match(submission, /화면 점검 완료 · My Page/);
   assert.match(submission, /if \(!ethicsComplete\) return showValidationError/);
-  assert.match(submission, /원고파일과 익명화 원고를 모두 선택/);
+  assert.match(submission, /원고파일을 선택해 주세요/);
+  assert.match(submission, /uploadJournalFile\(original, manuscriptId, "ORIGINAL", 1\)/);
+  assert.match(submission, /uploadJournalFile\(original, manuscriptId, "ANONYMIZED", 1\)/);
+  assert.doesNotMatch(submission, /name="anonymizedFile"/);
+  assert.doesNotMatch(submission, /심사용 익명화 원고에는/);
   assert.match(journal, /timeZone:\s*"Asia\/Seoul"/);
 });
 

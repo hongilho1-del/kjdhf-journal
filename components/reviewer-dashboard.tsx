@@ -86,7 +86,7 @@ export function ReviewerDashboard({ profile }: { profile: Profile }) {
   };
 
   return <div className="dashboard-stack">
-    <section className="dashboard-hero reviewer-hero"><div><p>REVIEWER DASHBOARD</p><h1>{profile.full_name || "심사위원"}님의 심사업무</h1><span>익명화 원고와 배정된 심사만 열람할 수 있습니다.</span></div><div className="blind-badge"><i /><span>DOUBLE-BLIND<br /><b>저자정보 비공개</b></span></div></section>
+    <section className="dashboard-hero reviewer-hero"><div><p>REVIEWER DASHBOARD</p><h1>{profile.full_name || "심사위원"}님의 심사업무</h1><span>배정된 원고와 심사만 열람할 수 있습니다.</span></div><div className="blind-badge"><i /><span>DOUBLE-BLIND<br /><b>저자정보 비공개</b></span></div></section>
     <section className="metric-grid"><Metric label="신규 의뢰" value={counts.invited} tone="alert" /><Metric label="심사 중" value={counts.active} /><Metric label="심사 완료" value={counts.completed} tone="success" /><Metric label="기한 초과" value={counts.overdue} tone="danger" /></section>
     {message && <div className="notice-box" role="status">{message}</div>}
     <section className="workspace-card"><div className="card-heading"><div><p>REVIEW ASSIGNMENTS</p><h2>배정 논문</h2></div><span>{items.length}건</span></div>
@@ -180,7 +180,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
     <p className="panel-eyebrow">DOUBLE-BLIND REVIEW · ROUND {item.round_no}</p><h2>{item.manuscript_code}</h2><h3>{item.title_ko}</h3><p className="english-title">{item.title_en}</p>
     <div className="blind-notice"><b>이중맹검 보호</b><span>이 화면에는 저자 이름, 이메일, 소속이 제공되지 않습니다.</span></div>
     <div className="abstract-grid"><article><span>국문초록</span><p>{item.abstract_ko}</p><small>{item.keywords_ko.join(" · ")}</small></article><article><span>ABSTRACT</span><p>{item.abstract_en}</p><small>{item.keywords_en.join(" · ")}</small></article></div>
-    <div className="file-list"><h4>익명 원고</h4>{files.length ? files.map((file) => <button type="button" key={file.file_id} onClick={() => void openFile(file)}><span>{file.file_kind === "REVISION" ? `${file.version_no}차 수정원고` : "최초 익명원고"}</span><small>{(file.size_bytes / 1024 / 1024).toFixed(1)}MB · 60초 보안링크</small><b>열람 ↗</b></button>) : <p>열람 가능한 익명 원고가 없습니다.</p>}</div>
+    <div className="file-list"><h4>심사용 원고</h4>{files.length ? files.map((file) => <button type="button" key={file.file_id} onClick={() => void openFile(file)}><span>{file.file_kind === "REVISION" ? `${file.version_no}차 수정원고` : "최초 제출원고"}</span><small>{(file.size_bytes / 1024 / 1024).toFixed(1)}MB · 60초 보안링크</small><b>열람 ↗</b></button>) : <p>열람 가능한 원고가 없습니다.</p>}</div>
     <form className="stack-form review-form" onSubmit={handleSubmit}>
       <label>심사판정<select value={draft.recommendation} disabled={readOnly} onChange={(event) => setDraft({ ...draft, recommendation: event.target.value as ReviewRecommendation })}>{Object.entries(RECOMMENDATION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <fieldset className="numbered-review-comments"><legend>저자 공개용 심사의견</legend><div className="numbered-review-heading"><p>항목별로 나누어 작성하면 투고자가 수정사항을 명확히 확인할 수 있습니다.</p>{!readOnly && <span>10개 기본 제공 · 필요 시 추가 가능</span>}</div>
