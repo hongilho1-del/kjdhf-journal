@@ -181,50 +181,6 @@ export type Database = {
           },
         ]
       }
-      journal_template_files: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          display_order: number
-          file_name: string
-          id: string
-          mime_type: string
-          size_bytes: number
-          storage_path: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          display_order?: number
-          file_name: string
-          id?: string
-          mime_type?: string
-          size_bytes: number
-          storage_path: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          display_order?: number
-          file_name?: string
-          id?: string
-          mime_type?: string
-          size_bytes?: number
-          storage_path?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "journal_template_files_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       editorial_decisions: {
         Row: {
           author_letter: string
@@ -320,6 +276,50 @@ export type Database = {
           },
         ]
       }
+      journal_template_files: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          file_name: string
+          id: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          file_name: string
+          id?: string
+          mime_type?: string
+          size_bytes: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          file_name?: string
+          id?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_template_files_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manuscript_counters: {
         Row: {
           last_number: number
@@ -340,6 +340,8 @@ export type Database = {
           bucket_id: string
           checksum_sha256: string | null
           created_at: string
+          editor_verified_at: string | null
+          editor_verified_by: string | null
           file_kind: Database["public"]["Enums"]["manuscript_file_kind"]
           id: string
           is_anonymized: boolean
@@ -355,6 +357,8 @@ export type Database = {
           bucket_id: string
           checksum_sha256?: string | null
           created_at?: string
+          editor_verified_at?: string | null
+          editor_verified_by?: string | null
           file_kind: Database["public"]["Enums"]["manuscript_file_kind"]
           id?: string
           is_anonymized?: boolean
@@ -370,6 +374,8 @@ export type Database = {
           bucket_id?: string
           checksum_sha256?: string | null
           created_at?: string
+          editor_verified_at?: string | null
+          editor_verified_by?: string | null
           file_kind?: Database["public"]["Enums"]["manuscript_file_kind"]
           id?: string
           is_anonymized?: boolean
@@ -382,6 +388,13 @@ export type Database = {
           version_no?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "manuscript_files_editor_verified_by_fkey"
+            columns: ["editor_verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "manuscript_files_manuscript_id_fkey"
             columns: ["manuscript_id"]
@@ -542,35 +555,41 @@ export type Database = {
           },
         ]
       }
-      profile_roles: {
+      profile_approval_history: {
         Row: {
-          granted_at: string
-          granted_by: string | null
+          action: string
+          changed_at: string
+          changed_by: string
+          id: number
+          note: string | null
           profile_id: string
-          role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
-          granted_at?: string
-          granted_by?: string | null
+          action: string
+          changed_at?: string
+          changed_by: string
+          id?: never
+          note?: string | null
           profile_id: string
-          role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
-          granted_at?: string
-          granted_by?: string | null
+          action?: string
+          changed_at?: string
+          changed_by?: string
+          id?: never
+          note?: string | null
           profile_id?: string
-          role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: [
           {
-            foreignKeyName: "profile_roles_granted_by_fkey"
-            columns: ["granted_by"]
+            foreignKeyName: "profile_approval_history_changed_by_fkey"
+            columns: ["changed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profile_roles_profile_id_fkey"
+            foreignKeyName: "profile_approval_history_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -613,6 +632,42 @@ export type Database = {
           },
           {
             foreignKeyName: "profile_role_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_roles: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          profile_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_roles_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -670,41 +725,6 @@ export type Database = {
           {
             foreignKeyName: "profiles_approved_by_fkey"
             columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_consents: {
-        Row: {
-          consent_type: string
-          decided_at: string
-          id: number
-          is_agreed: boolean
-          policy_version: string
-          profile_id: string
-        }
-        Insert: {
-          consent_type: string
-          decided_at?: string
-          id?: never
-          is_agreed: boolean
-          policy_version: string
-          profile_id: string
-        }
-        Update: {
-          consent_type?: string
-          decided_at?: string
-          id?: never
-          is_agreed?: boolean
-          policy_version?: string
-          profile_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_consents_profile_id_fkey"
-            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -800,6 +820,9 @@ export type Database = {
       reviewer_assignments: {
         Row: {
           assigned_by: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           decline_reason: string | null
           due_at: string
@@ -813,6 +836,9 @@ export type Database = {
         }
         Insert: {
           assigned_by?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           decline_reason?: string | null
           due_at: string
@@ -826,6 +852,9 @@ export type Database = {
         }
         Update: {
           assigned_by?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           decline_reason?: string | null
           due_at?: string
@@ -841,6 +870,13 @@ export type Database = {
           {
             foreignKeyName: "reviewer_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviewer_assignments_cancelled_by_fkey"
+            columns: ["cancelled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -911,6 +947,41 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          consent_type: string
+          decided_at: string
+          id: number
+          is_agreed: boolean
+          policy_version: string
+          profile_id: string
+        }
+        Insert: {
+          consent_type: string
+          decided_at?: string
+          id?: never
+          is_agreed: boolean
+          policy_version: string
+          profile_id: string
+        }
+        Update: {
+          consent_type?: string
+          decided_at?: string
+          id?: never
+          is_agreed?: boolean
+          policy_version?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_consents_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -930,7 +1001,10 @@ export type Database = {
           created_at: string
           created_by: string
           current_due_at: string | null
+          ethics_agreed_at: string | null
+          ethics_author_names: string[]
           ethics_confirmed: boolean
+          ethics_policy_version: string | null
           id: string
           keywords_en: string[]
           keywords_ko: string[]
@@ -942,6 +1016,9 @@ export type Database = {
           title_en: string
           title_ko: string
           updated_at: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
         }
         SetofOptions: {
           from: "*"
@@ -958,6 +1035,34 @@ export type Database = {
         }
         Returns: {
           assigned_by: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          decline_reason: string | null
+          due_at: string
+          id: string
+          manuscript_id: string
+          responded_at: string | null
+          reviewer_id: string
+          round_no: number
+          status: Database["public"]["Enums"]["assignment_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reviewer_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_reviewer_assignment: {
+        Args: { cancel_reason?: string; target_assignment_id: string }
+        Returns: {
+          assigned_by: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           decline_reason: string | null
           due_at: string
@@ -1008,8 +1113,12 @@ export type Database = {
           to_status: Database["public"]["Enums"]["manuscript_status"]
         }[]
       }
-      get_reviewer_files: {
-        Args: { target_manuscript_id: string }
+      get_my_roles: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      get_reviewer_assignment_files: {
+        Args: { target_assignment_id: string }
         Returns: {
           bucket_id: string
           created_at: string
@@ -1043,10 +1152,6 @@ export type Database = {
           title_en: string
           title_ko: string
         }[]
-      }
-      get_my_roles: {
-        Args: never
-        Returns: Database["public"]["Enums"]["app_role"][]
       }
       has_app_role: {
         Args: { required_role: Database["public"]["Enums"]["app_role"] }
@@ -1094,6 +1199,9 @@ export type Database = {
         }
         Returns: {
           assigned_by: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           decline_reason: string | null
           due_at: string
@@ -1139,37 +1247,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      set_user_role: {
-        Args: {
-          new_role: Database["public"]["Enums"]["app_role"]
-          target_user_id: string
-        }
+      set_admin_login_alias: {
+        Args: { login_username: string; target_user_id: string }
         Returns: {
-          affiliation: string | null
           created_at: string
-          email: string
-          full_name: string
-          id: string
-          is_active: boolean
-          phone: string | null
-          research_fields: string[]
-          reviewer_bio: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          created_by: string
           updated_at: string
+          user_id: string
+          username: string
         }
         SetofOptions: {
           from: "*"
-          to: "profiles"
+          to: "admin_login_aliases"
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      set_user_roles: {
-        Args: {
-          new_roles: Database["public"]["Enums"]["app_role"][]
-          target_user_id: string
-        }
-        Returns: Database["public"]["Enums"]["app_role"][]
       }
       set_user_activation: {
         Args: {
@@ -1199,11 +1291,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      withdraw_manuscript: {
+      set_user_role: {
         Args: {
-          reason: string
-          target_manuscript_id: string
+          new_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
         }
+        Returns: {
+          affiliation: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          research_fields: string[]
+          reviewer_bio: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_user_roles: {
+        Args: {
+          new_roles: Database["public"]["Enums"]["app_role"][]
+          target_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      submit_manuscript: {
+        Args: { target_manuscript_id: string }
         Returns: {
           abstract_en: string
           abstract_ko: string
@@ -1212,7 +1335,10 @@ export type Database = {
           created_at: string
           created_by: string
           current_due_at: string | null
+          ethics_agreed_at: string | null
+          ethics_author_names: string[]
           ethics_confirmed: boolean
+          ethics_policy_version: string | null
           id: string
           keywords_en: string[]
           keywords_ko: string[]
@@ -1227,49 +1353,6 @@ export type Database = {
           withdrawal_reason: string | null
           withdrawn_at: string | null
           withdrawn_by: string | null
-        }
-      }
-      set_admin_login_alias: {
-        Args: {
-          login_username: string
-          target_user_id: string
-        }
-        Returns: {
-          created_at: string
-          created_by: string
-          updated_at: string
-          user_id: string
-          username: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "admin_login_aliases"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      submit_manuscript: {
-        Args: { target_manuscript_id: string }
-        Returns: {
-          abstract_en: string
-          abstract_ko: string
-          conflict_of_interest_confirmed: boolean
-          copyright_agreed: boolean
-          created_at: string
-          created_by: string
-          current_due_at: string | null
-          ethics_confirmed: boolean
-          id: string
-          keywords_en: string[]
-          keywords_ko: string[]
-          manuscript_code: string | null
-          research_field: string
-          round_no: number
-          status: Database["public"]["Enums"]["manuscript_status"]
-          submitted_at: string | null
-          title_en: string
-          title_ko: string
-          updated_at: string
         }
         SetofOptions: {
           from: "*"
@@ -1315,7 +1398,10 @@ export type Database = {
           created_at: string
           created_by: string
           current_due_at: string | null
+          ethics_agreed_at: string | null
+          ethics_author_names: string[]
           ethics_confirmed: boolean
+          ethics_policy_version: string | null
           id: string
           keywords_en: string[]
           keywords_ko: string[]
@@ -1327,6 +1413,9 @@ export type Database = {
           title_en: string
           title_ko: string
           updated_at: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
         }
         SetofOptions: {
           from: "*"
@@ -1345,6 +1434,8 @@ export type Database = {
         }
         Returns: {
           affiliation: string | null
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           email: string
           full_name: string
@@ -1359,6 +1450,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      withdraw_manuscript: {
+        Args: { reason: string; target_manuscript_id: string }
+        Returns: {
+          abstract_en: string
+          abstract_ko: string
+          conflict_of_interest_confirmed: boolean
+          copyright_agreed: boolean
+          created_at: string
+          created_by: string
+          current_due_at: string | null
+          ethics_agreed_at: string | null
+          ethics_author_names: string[]
+          ethics_confirmed: boolean
+          ethics_policy_version: string | null
+          id: string
+          keywords_en: string[]
+          keywords_ko: string[]
+          manuscript_code: string | null
+          research_field: string
+          round_no: number
+          status: Database["public"]["Enums"]["manuscript_status"]
+          submitted_at: string | null
+          title_en: string
+          title_ko: string
+          updated_at: string
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "manuscripts"
           isOneToOne: true
           isSetofReturn: false
         }

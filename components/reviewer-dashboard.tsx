@@ -124,7 +124,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
   useEffect(() => {
     const supabase = getSupabaseClient();
     void Promise.all([
-      supabase.rpc("get_reviewer_files", { target_manuscript_id: item.manuscript_id }),
+      supabase.rpc("get_reviewer_assignment_files", { target_assignment_id: item.assignment_id }),
       supabase.from("reviews").select("recommendation,author_comments,editor_comments").eq("assignment_id", item.assignment_id).maybeSingle(),
     ]).then(([fileResult, reviewResult]) => {
       setFiles((fileResult.data ?? []) as ReviewerFile[]);
@@ -134,7 +134,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
         editorComments: reviewResult.data.editor_comments,
       });
     });
-  }, [item.assignment_id, item.manuscript_id]);
+  }, [item.assignment_id]);
 
   async function openFile(file: ReviewerFile) {
     try { window.open(await getJournalFileUrl(file.file_id), "_blank", "noopener,noreferrer"); }
@@ -180,7 +180,7 @@ function ReviewModal({ item, onClose, onComplete }: { item: ReviewerManuscript; 
     <p className="panel-eyebrow">DOUBLE-BLIND REVIEW · ROUND {item.round_no}</p><h2>{item.manuscript_code}</h2><h3>{item.title_ko}</h3><p className="english-title">{item.title_en}</p>
     <div className="blind-notice"><b>이중맹검 보호</b><span>이 화면에는 저자 이름, 이메일, 소속이 제공되지 않습니다.</span></div>
     <div className="abstract-grid"><article><span>국문초록</span><p>{item.abstract_ko}</p><small>{item.keywords_ko.join(" · ")}</small></article><article><span>ABSTRACT</span><p>{item.abstract_en}</p><small>{item.keywords_en.join(" · ")}</small></article></div>
-    <div className="file-list"><h4>심사용 원고</h4>{files.length ? files.map((file) => <button type="button" key={file.file_id} onClick={() => void openFile(file)}><span>{file.file_kind === "REVISION" ? `${file.version_no}차 수정원고` : "최초 제출원고"}</span><small>{(file.size_bytes / 1024 / 1024).toFixed(1)}MB · 60초 보안링크</small><b>열람 ↗</b></button>) : <p>열람 가능한 원고가 없습니다.</p>}</div>
+    <div className="file-list"><h4>심사용 익명 원고</h4>{files.length ? files.map((file) => <button type="button" key={file.file_id} onClick={() => void openFile(file)}><span>{file.version_no}차 익명화 원고</span><small>{(file.size_bytes / 1024 / 1024).toFixed(1)}MB · 60초 보안링크</small><b>열람 ↗</b></button>) : <p>열람 가능한 익명 원고가 없습니다.</p>}</div>
     <form className="stack-form review-form" onSubmit={handleSubmit}>
       <label>심사판정<select value={draft.recommendation} disabled={readOnly} onChange={(event) => setDraft({ ...draft, recommendation: event.target.value as ReviewRecommendation })}>{Object.entries(RECOMMENDATION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <fieldset className="numbered-review-comments"><legend>저자 공개용 심사의견</legend><div className="numbered-review-heading"><p>항목별로 나누어 작성하면 투고자가 수정사항을 명확히 확인할 수 있습니다.</p>{!readOnly && <span>10개 기본 제공 · 필요 시 추가 가능</span>}</div>

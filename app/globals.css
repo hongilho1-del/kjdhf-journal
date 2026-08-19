@@ -1745,6 +1745,24 @@ button:focus-visible {
 .assignment-row { display: flex; padding: 10px 0; flex-direction: column; gap: 3px; border-top: 1px solid var(--line); }
 .assignment-row b { font-size: 10px; }
 .assignment-row span, .assignment-row small { color: var(--muted); font-size: 8px; }
+.assignment-row-cancelled, .assignment-row-declined { opacity: .65; }
+.assignment-cancel-button { align-self: flex-start; margin-top: 6px; padding: 6px 9px; border: 1px solid #a6473c; color: #8a352b; font-size: 8px; font-weight: 850; }
+.editorial-file-workflow .detail-section-head { align-items: flex-start; gap: 18px; }
+.editorial-file-workflow .detail-section-head h3 { margin-bottom: 6px; }
+.editorial-file-workflow .detail-section-head p { max-width: 650px; margin: 0; color: var(--muted); font-size: 9px; line-height: 1.7; }
+.anonymous-ready, .anonymous-pending { flex: none; padding: 7px 10px; font-size: 8px; font-weight: 900; }
+.anonymous-ready { background: #dfeee7; color: #245d49; }
+.anonymous-pending { background: #fff0cf; color: #805f1c; }
+.editorial-file-grid { display: grid; margin-top: 18px; grid-template-columns: 1fr 1fr; gap: 18px; }
+.editorial-file-grid h4 { margin: 0 0 10px; color: var(--ink); font-size: 10px; }
+.editorial-file-list { display: grid; gap: 7px; }
+.editorial-file-list button, .anonymous-current-file { display: grid; width: 100%; padding: 12px; grid-template-columns: 1fr auto; gap: 4px 12px; border: 1px solid var(--line); background: #f6f8fa; text-align: left; }
+.editorial-file-list button span, .anonymous-current-file span { color: var(--ink); font-size: 9px; font-weight: 850; }
+.editorial-file-list button small, .anonymous-current-file small { grid-column: 1; color: var(--muted); font-size: 8px; }
+.editorial-file-list button b { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--forest-2); font-size: 8px; }
+.anonymous-upload-form { padding: 15px; background: #f6f8fa; }
+.anonymous-current-file { margin-bottom: 10px; border-color: #90b8a5; background: #edf7f2; }
+.anonymous-upload-form label { font-size: 9px; }
 .publication-section { border: 2px solid var(--lime); }
 .publication-section .form-grid { padding: 0; }
 .split-workspace { display: grid; grid-template-columns: 1.25fr .75fr; gap: 20px; }
@@ -1776,7 +1794,7 @@ footer button { color: inherit; }
   .metric-grid, .admin-metrics { grid-template-columns: repeat(2, 1fr); }
   .dashboard-hero { min-height: 260px; align-items: flex-start; flex-direction: column; gap: 28px; }
   .review-card-list { grid-template-columns: 1fr; }
-  .form-grid, .abstract-grid, .detail-columns, .split-workspace { grid-template-columns: 1fr; }
+  .form-grid, .abstract-grid, .detail-columns, .split-workspace, .editorial-file-grid { grid-template-columns: 1fr; }
   .form-grid > label, .form-grid .wide { grid-column: 1; }
   .coauthor-block { grid-template-columns: 1fr; }
   .coauthor-block > div, .coauthor-block .wide { grid-column: 1; }

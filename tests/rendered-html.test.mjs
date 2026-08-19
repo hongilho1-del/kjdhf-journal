@@ -323,8 +323,8 @@ test("authors can upload HWPX files for initial, revision, and final manuscript 
   assert.match(dashboard, /PDF, Word, HWP, HWPX/);
   assert.doesNotMatch(dashboard, /name="anonymized"/);
   assert.match(dashboard, /파일명 : 저자-제목 순으로 작성해 주세요/);
-  assert.match(dashboard, /const uploadedOriginal = await uploadJournalFile\(original, manuscript\.id, "ORIGINAL", 1\)/);
-  assert.match(dashboard, /createJournalReviewCopy\(original, uploadedOriginal, manuscript\.id, 1\)/);
+  assert.match(dashboard, /await uploadJournalFile\(original, manuscript\.id, "ORIGINAL", 1\)/);
+  assert.doesNotMatch(dashboard, /createJournalReviewCopy/);
   assert.match(fileAccess, /from\("profile_roles"\)/);
   assert.match(fileAccess, /roles\.has\("AUTHOR"\) && manuscript\.created_by === userId/);
   assert.match(fileAccess, /!authorized && roles\.has\("REVIEWER"\)/);
@@ -420,7 +420,9 @@ test("reviewer UI never queries author identity tables", async () => {
   const reviewer = await readFile(new URL("../components/reviewer-dashboard.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(reviewer, /\.from\(["']authors["']\)|\.from\(["']profiles["']\)/);
   assert.match(reviewer, /get_reviewer_manuscripts/);
-  assert.match(reviewer, /get_reviewer_files/);
+  assert.match(reviewer, /get_reviewer_assignment_files/);
+  assert.match(reviewer, /심사용 익명 원고/);
+  assert.doesNotMatch(reviewer, /file\.file_kind === "REVISION"/);
   assert.match(reviewer, /MIN_AUTHOR_COMMENT_ITEMS\s*=\s*10/);
   assert.match(reviewer, /심사의견 항목 추가/);
 });
@@ -457,11 +459,37 @@ test("administrators can inspect every workspace and bypass only wizard navigati
   assert.match(submission, /화면 점검 완료 · My Page/);
   assert.match(submission, /if \(!ethicsComplete\) return showValidationError/);
   assert.match(submission, /원고파일을 선택해 주세요/);
-  assert.match(submission, /const uploadedOriginal = await uploadJournalFile\(original, manuscriptId, "ORIGINAL", 1\)/);
-  assert.match(submission, /createJournalReviewCopy\(original, uploadedOriginal, manuscriptId, 1\)/);
+  assert.match(submission, /await uploadJournalFile\(original, manuscriptId, "ORIGINAL", 1\)/);
+  assert.doesNotMatch(submission, /createJournalReviewCopy/);
   assert.doesNotMatch(submission, /name="anonymizedFile"/);
   assert.doesNotMatch(submission, /심사용 익명화 원고에는/);
   assert.match(journal, /timeZone:\s*"Asia\/Seoul"/);
+});
+
+test("editorial staff anonymize files before assigning reviewers and can cancel unfinished assignments", async () => {
+  const [editor, reviewer, fileAccess, migration, verificationMigration] = await Promise.all([
+    readFile(new URL("../components/editor-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/reviewer-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/functions/file-access/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260819094901_editorial_anonymization_and_assignment_cancellation.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260819095333_require_editor_verified_anonymized_files.sql", import.meta.url), "utf8"),
+  ]);
+  assert.match(editor, /uploadJournalFile\(file, manuscript\.id, "ANONYMIZED", targetRound\)/);
+  assert.match(editor, /익명화 원고를 먼저 등록해 주세요/);
+  assert.match(editor, /cancel_reviewer_assignment/);
+  assert.match(editor, /배정 취소·교체/);
+  assert.match(reviewer, /get_reviewer_assignment_files/);
+  assert.match(fileAccess, /fileRecord\.file_kind === "ANONYMIZED"/);
+  assert.match(fileAccess, /fileRecord\.editor_verified_at/);
+  assert.match(fileAccess, /\.eq\("round_no", fileRecord\.version_no\)/);
+  assert.match(fileAccess, /\.in\("status", \["ACCEPTED", "COMPLETED"\]\)/);
+  assert.match(migration, /cancelled_at timestamptz/);
+  assert.match(migration, /An anonymized manuscript file must be uploaded before reviewer assignment/);
+  assert.match(migration, /Submitted review assignments cannot be cancelled/);
+  assert.match(migration, /f\.file_kind = 'ANONYMIZED'/);
+  assert.match(verificationMigration, /editor_verified_at timestamptz/);
+  assert.match(verificationMigration, /An editor-verified anonymized manuscript file must be uploaded/);
+  assert.match(verificationMigration, /f\.editor_verified_at is not null/);
 });
 
 test("authors can withdraw a submitted manuscript without deleting its audit record", async () => {

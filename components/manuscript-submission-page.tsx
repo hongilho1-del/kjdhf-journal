@@ -5,7 +5,7 @@ import { FileSubmissionModal, openAuthorReviewResult } from "@/components/author
 import { STATUS_LABELS, formatDate, getErrorMessage, splitKeywords, type Manuscript, type Profile } from "@/lib/journal";
 import { ETHICS_POLICY_VERSION, RESEARCH_PUBLICATION_ETHICS_POLICY } from "@/lib/policies";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { MANUSCRIPT_FILE_ACCEPT, createJournalReviewCopy, uploadJournalFile } from "@/lib/supabase/files";
+import { MANUSCRIPT_FILE_ACCEPT, uploadJournalFile } from "@/lib/supabase/files";
 
 type SubmissionTab = "new" | "revision" | "final" | "status";
 type WizardStep = 1 | 2 | 3 | 4;
@@ -37,7 +37,7 @@ function draftIdFromHash() {
 
 const TAB_COPY: Record<SubmissionTab, { title: string; description: string }> = {
   new: { title: "신규논문제출", description: "연구윤리 서약부터 원고파일 제출까지 단계별로 진행합니다." },
-  revision: { title: "수정논문제출", description: "심사의견을 확인한 뒤 익명화된 수정원고를 제출합니다." },
+  revision: { title: "수정논문제출", description: "심사의견을 확인한 뒤 수정원고를 제출합니다. 편집진이 심사용 파일을 별도로 익명화합니다." },
   final: { title: "최종논문제출", description: "게재 판정을 받은 논문의 최종 편집원고를 제출합니다." },
   status: { title: "내논문심사현황", description: "투고 논문의 현재 상태와 공개된 심사결과를 확인합니다." },
 };
@@ -356,8 +356,7 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
       if (consentError) throw consentError;
 
       setMessage("원고파일을 안전하게 업로드하고 있습니다…");
-      const uploadedOriginal = await uploadJournalFile(original, manuscriptId, "ORIGINAL", 1);
-      await createJournalReviewCopy(original, uploadedOriginal, manuscriptId, 1);
+      await uploadJournalFile(original, manuscriptId, "ORIGINAL", 1);
       const { error: submitError } = await supabase.rpc("submit_manuscript", { target_manuscript_id: manuscriptId });
       if (submitError) throw submitError;
       const { data: submitted } = await supabase.from("manuscripts").select("manuscript_code").eq("id", manuscriptId).single();
@@ -454,7 +453,7 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
       <div className="wizard-heading"><small>STEP 04</small><h2>원고파일 확인 및 최종 제출</h2></div>
       <div className="submission-review"><div><span>저자 구성</span><strong>{authorship === "SOLE" ? "단독저자" : `공동저자 ${authors.length}명`}</strong></div><div><span>교신저자</span><strong>{authors[correspondingIndex]?.nameKo}</strong><small>{authors[correspondingIndex]?.email}</small></div><div className="wide"><span>논문제목</span><strong>{paper.titleKo}</strong><small>{paper.titleEn}</small></div></div>
       <form className="wizard-form file-step-form" onSubmit={handleFinalSubmit}>
-        <label className="wide"><span className="file-upload-title"><b>원고파일</b><em>파일명 : 저자-제목 순으로 작성해 주세요.</em></span><input name="originalFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 제출한 원고가 편집과 심사에 함께 사용됩니다.</small></label>
+        <label className="wide"><span className="file-upload-title"><b>원고파일</b><em>파일명 : 저자-제목 순으로 작성해 주세요.</em></span><input name="originalFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 편집진이 확인한 뒤 심사용 익명 원고를 별도로 등록합니다.</small></label>
         <label className="final-consent wide"><input type="checkbox" checked={copyrightAgreed} onChange={(event) => setCopyrightAgreed(event.target.checked)} required /><span>모든 저자를 대표하여 게재 시 저작권 및 이용조건에 동의합니다.</span></label>
         <div className="wizard-actions wide"><button className="secondary-button" type="button" disabled={busy} onClick={() => goToStep(3)}>← 이전</button>{adminTestMode && <button className="admin-test-finish-button" type="button" disabled={busy} onClick={onMyPage}>화면 점검 완료 · My Page</button>}<button className="draft-save-button" type="button" disabled={busy} onClick={() => void saveDraft(true)}>{busy ? "저장 중…" : "임시저장"}</button><button className="button button-primary" disabled={busy}>{busy ? "투고 처리 중…" : "논문 투고 완료"} <span>→</span></button></div>
       </form>

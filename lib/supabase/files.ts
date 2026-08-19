@@ -64,15 +64,6 @@ export async function uploadJournalFile(
   return data.file as JournalFileResult;
 }
 
-export async function createJournalReviewCopy(
-  file: File,
-  _uploaded: JournalFileResult,
-  manuscriptId: string,
-  versionNo: number,
-) {
-  return uploadJournalFile(file, manuscriptId, "ANONYMIZED", versionNo);
-}
-
 export async function getJournalFileUrl(fileId: string) {
   const { data, error } = await getSupabaseClient().functions.invoke("file-access", {
     body: { action: "signed-url", file_id: fileId },

@@ -20,12 +20,13 @@ import {
 } from "@/lib/journal";
 import type { Tables } from "@/lib/supabase/database.types";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { uploadJournalFile } from "@/lib/supabase/files";
+import { MANUSCRIPT_FILE_ACCEPT, getJournalFileUrl, uploadJournalFile } from "@/lib/supabase/files";
 
 type Assignment = Tables<"reviewer_assignments">;
 type Review = Tables<"reviews"> & { reviewer_assignments: { manuscript_id: string; reviewer_id: string; round_no: number } };
 type Author = Tables<"authors">;
 type Issue = Tables<"issues">;
+type ManuscriptFile = Tables<"manuscript_files">;
 
 function dateInputAfter(days: number) {
   const date = new Date();
@@ -43,7 +44,14 @@ function assignmentErrorMessage(message: string) {
   if (/three active reviewers/i.test(message)) return "현재 심사차수에 심사위원 3명이 모두 배정되었습니다.";
   if (/active reviewer not found/i.test(message)) return "활성화된 심사위원 계정을 찾을 수 없습니다.";
   if (/assignment is not allowed in the current status/i.test(message)) return "형식검토를 시작한 후 심사위원을 배정해 주세요.";
+  if (/an (?:editor-verified )?anonymized manuscript file must be uploaded/i.test(message)) return "현재 심사차수의 익명화 원고를 먼저 업로드해 주세요.";
+  if (/submitted review assignments cannot be cancelled/i.test(message)) return "이미 심사를 제출한 배정은 기록 보존을 위해 취소할 수 없습니다.";
+  if (/only invited or accepted assignments can be cancelled/i.test(message)) return "수락대기 또는 심사중인 배정만 취소할 수 있습니다.";
   return message;
+}
+
+function assignmentStatusLabel(status: Assignment["status"]) {
+  return { INVITED: "수락대기", ACCEPTED: "심사중", DECLINED: "거절", COMPLETED: "심사완료", CANCELLED: "배정취소" }[status];
 }
 
 export function EditorDashboard({ profile }: { profile: Profile }) {
@@ -128,6 +136,7 @@ function ManuscriptBoard({ loading, manuscripts, assignments, profiles, onSelect
 
 function EditorialDetail({ manuscript, profiles, profileRoles, assignments, reviews, issues, isAdmin, onClose, onChanged }: { manuscript: Manuscript; profiles: Profile[]; profileRoles: ProfileRole[]; assignments: Assignment[]; reviews: Review[]; issues: Issue[]; isAdmin: boolean; onClose: () => void; onChanged: () => Promise<void> }) {
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [files, setFiles] = useState<ManuscriptFile[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const manuscriptAssignments = assignments.filter((item) => item.manuscript_id === manuscript.id);
@@ -135,13 +144,31 @@ function EditorialDetail({ manuscript, profiles, profileRoles, assignments, revi
   const targetRoundAssignments = manuscriptAssignments.filter((item) => item.round_no === targetRound);
   const currentRoundAssignments = targetRoundAssignments.filter((item) => !["DECLINED", "CANCELLED"].includes(item.status));
   const manuscriptReviews = reviews.filter((item) => item.reviewer_assignments.manuscript_id === manuscript.id);
-  const assignedReviewerIds = new Set(targetRoundAssignments.map((item) => item.reviewer_id));
+  const assignedReviewerIds = new Set(currentRoundAssignments.map((item) => item.reviewer_id));
   const authorUserIds = new Set(authors.map((author) => author.user_id).filter(Boolean));
   const reviewerIds = new Set(profileRoles.filter((item) => item.role === "REVIEWER").map((item) => item.profile_id));
   const reviewers = profiles.filter((item) => reviewerIds.has(item.id) && item.is_active && !assignedReviewerIds.has(item.id) && !authorUserIds.has(item.id));
   const assignmentAllowed = (["FORMAT_REVIEW", "REVIEWER_SELECTION", "REVISION_SUBMITTED", "RE_REVIEW"] as ManuscriptStatus[]).includes(manuscript.status);
+  const currentAnonymousFile = files
+    .filter((file) => file.file_kind === "ANONYMIZED" && file.is_anonymized && file.editor_verified_at && file.version_no === targetRound)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const sourceFiles = files
+    .filter((file) => file.file_kind === "ORIGINAL" || file.file_kind === "REVISION")
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-  useEffect(() => { void getSupabaseClient().from("authors").select("*").eq("manuscript_id", manuscript.id).order("sort_order").then(({ data }) => setAuthors(data ?? [])); }, [manuscript.id]);
+  const loadSupportingData = useCallback(async () => {
+    const supabase = getSupabaseClient();
+    const [authorResult, fileResult] = await Promise.all([
+      supabase.from("authors").select("*").eq("manuscript_id", manuscript.id).order("sort_order"),
+      supabase.from("manuscript_files").select("*").eq("manuscript_id", manuscript.id).order("created_at", { ascending: false }),
+    ]);
+    setAuthors(authorResult.data ?? []);
+    setFiles(fileResult.data ?? []);
+    const error = authorResult.error ?? fileResult.error;
+    if (error) setMessage(error.message);
+  }, [manuscript.id]);
+
+  useEffect(() => { void loadSupportingData(); }, [loadSupportingData]);
 
   async function advance(nextStatus: ManuscriptStatus, note: string) {
     setBusy(true); setMessage("");
@@ -165,6 +192,51 @@ function EditorialDetail({ manuscript, profiles, profileRoles, assignments, revi
     setBusy(false);
   }
 
+  async function openFile(file: ManuscriptFile) {
+    try {
+      window.open(await getJournalFileUrl(file.id), "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  }
+
+  async function uploadAnonymous(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const file = new FormData(formElement).get("anonymousFile");
+    if (!(file instanceof File) || !file.size) {
+      setMessage("익명화 원고파일을 선택해 주세요.");
+      return;
+    }
+    setBusy(true); setMessage("");
+    try {
+      await uploadJournalFile(file, manuscript.id, "ANONYMIZED", targetRound);
+      await loadSupportingData();
+      setMessage(`${targetRound}차 심사용 익명화 원고를 등록했습니다. 이제 심사위원을 배정할 수 있습니다.`);
+      formElement.reset();
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelAssignment(assignment: Assignment) {
+    const reason = window.prompt("배정 취소 사유를 입력해 주세요. 취소 이력에 기록됩니다.", "심사위원 배정 변경");
+    if (reason === null) return;
+    setBusy(true); setMessage("");
+    const { error } = await getSupabaseClient().rpc("cancel_reviewer_assignment", {
+      target_assignment_id: assignment.id,
+      cancel_reason: reason.trim() || undefined,
+    });
+    if (error) setMessage(assignmentErrorMessage(error.message));
+    else {
+      await onChanged();
+      setMessage("심사위원 배정을 취소했습니다. 다른 심사위원을 바로 배정할 수 있습니다.");
+    }
+    setBusy(false);
+  }
+
   async function decide(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage(""); const form = new FormData(event.currentTarget);
     const { error } = await getSupabaseClient().rpc("record_editorial_decision", {
@@ -184,11 +256,27 @@ function EditorialDetail({ manuscript, profiles, profileRoles, assignments, revi
     <div className="editorial-detail-grid">
       <div className="detail-main">
         <section className="detail-section"><div className="detail-section-head"><h3>논문·저자 정보</h3>{nextAction && <button className="primary-small" disabled={busy} onClick={() => void advance(nextAction[0], nextAction[1])}>{nextAction[1]} →</button>}</div><p className="abstract-copy">{manuscript.abstract_ko}</p><div className="metadata-chips"><span>{manuscript.research_field}</span><span>{manuscript.keywords_ko.join(" · ")}</span><span>{manuscript.round_no}차</span></div><div className="author-list"><h4>저자정보 · 편집진 전용</h4>{authors.map((author) => <p key={author.id}><b>{author.name_ko}{author.is_corresponding && " · 교신"}</b><span>{author.affiliation_ko}</span><small>{author.email}</small></p>)}</div></section>
+        <section className="detail-section editorial-file-workflow">
+          <div className="detail-section-head"><div><h3>심사용 원고 익명화</h3><p>저자가 제출한 원고를 확인한 뒤 저자명, 소속, 이메일, 감사의 글 등 식별정보를 삭제해 업로드해 주세요.</p></div><span className={currentAnonymousFile ? "anonymous-ready" : "anonymous-pending"}>{currentAnonymousFile ? `${targetRound}차 익명 원고 준비완료` : `${targetRound}차 익명 원고 필요`}</span></div>
+          <div className="editorial-file-grid">
+            <div><h4>저자 제출 원고 · 편집진 전용</h4>{sourceFiles.length ? <div className="editorial-file-list">{sourceFiles.map((file) => <button type="button" key={file.id} onClick={() => void openFile(file)}><span>{file.file_kind === "ORIGINAL" ? "최초 원고" : `${file.version_no}차 수정원고`}</span><small>{file.original_name} · {(file.size_bytes / 1024 / 1024).toFixed(1)}MB</small><b>확인 ↗</b></button>)}</div> : <p className="muted-text">저자가 제출한 원고가 없습니다.</p>}</div>
+            <form className="stack-form anonymous-upload-form" onSubmit={uploadAnonymous}><h4>{targetRound}차 심사용 익명 원고</h4>{currentAnonymousFile && <button className="anonymous-current-file" type="button" onClick={() => void openFile(currentAnonymousFile)}><span>{currentAnonymousFile.original_name}</span><small>{formatDate(currentAnonymousFile.created_at)} · 심사위원에게 제공되는 파일</small></button>}<label>{currentAnonymousFile ? "익명 원고 교체 업로드" : "익명 원고 업로드"}<input name="anonymousFile" type="file" accept={MANUSCRIPT_FILE_ACCEPT} required /><small>PDF, Word, HWP, HWPX · 업로드 후 이 파일만 심사위원에게 공개됩니다.</small></label><button className="secondary-button" disabled={busy}>{busy ? "업로드 중…" : currentAnonymousFile ? "익명 원고 교체" : "익명 원고 등록"}</button></form>
+          </div>
+        </section>
         <section className="detail-section"><h3>심사결과</h3>{manuscriptReviews.length ? manuscriptReviews.map((review) => <article className="review-result" key={review.id}><div><span>{review.reviewer_assignments.round_no}차 심사</span><b>{review.recommendation ? RECOMMENDATION_LABELS[review.recommendation] : "임시저장"}</b></div><h4>저자 공개용</h4><p>{review.author_comments || "—"}</p><h4>편집위원 전용</h4><p>{review.editor_comments || "—"}</p></article>) : <p className="muted-text">제출된 심사결과가 없습니다.</p>}</section>
         <section className="detail-section"><h3>편집결정 입력</h3>{manuscript.status === "WITHDRAWN" ? <div className="withdrawal-record"><strong>투고자가 원고를 철회했습니다.</strong><p>{manuscript.withdrawal_reason}</p><small>{formatDate(manuscript.withdrawn_at)}</small></div> : <form className="stack-form decision-form" onSubmit={decide}><label>판정<select name="decision" required><option value="REVISION_REQUESTED">수정요청</option><option value="ACCEPTED">게재가</option><option value="ACCEPT_WITH_REVISIONS">수정후게재</option><option value="REJECTED">게재불가</option><option value="FINAL_ACCEPTED">게재확정</option></select></label><label>저자 통보문<textarea name="authorLetter" rows={5} required /></label><label>내부 메모<textarea name="internalNote" rows={3} /></label><button className="button button-primary" disabled={busy}>편집결정 기록</button></form>}</section>
         {isAdmin && manuscript.status === "FINAL_ACCEPTED" && <PublicationForm manuscript={manuscript} issues={issues} onChanged={onChanged} />}
       </div>
-      <aside className="detail-aside"><section><div className="assignment-heading"><h3>심사위원 배정</h3><strong>{currentRoundAssignments.length} / 3명</strong></div>{!assignmentAllowed ? <div className="notice-box">먼저 논문·저자 정보의 <b>형식검토 시작</b> 버튼을 눌러 주세요. 이후 심사위원을 배정할 수 있습니다.</div> : currentRoundAssignments.length >= 3 ? <div className="notice-box">현재 심사차수에 심사위원 3명이 모두 배정되었습니다.</div> : reviewers.length === 0 ? <div className="notice-box">추가로 배정할 수 있는 활성 심사위원이 없습니다.</div> : <form className="stack-form compact-form" onSubmit={assign}><p className="assignment-guide">심사위원을 1명씩 배정할 수 있습니다. 배정 후 나머지 인원을 이어서 추가해 주세요.</p><label>심사위원<select name="reviewer" required defaultValue=""><option value="" disabled>심사위원 선택</option>{reviewers.map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name} · {reviewer.affiliation ?? "소속 미입력"}</option>)}</select></label><label>심사기한<input name="dueAt" type="date" required min={dateInputAfter(1)} defaultValue={dateInputAfter(14)} /></label><button className="secondary-button" disabled={busy}>{busy ? "배정 중…" : "심사위원 1명 배정"}</button></form>}</section><section><h3>배정현황</h3>{manuscriptAssignments.length ? manuscriptAssignments.map((assignment) => <div className="assignment-row" key={assignment.id}><b>{profiles.find((person) => person.id === assignment.reviewer_id)?.full_name ?? "심사위원"}</b><span>{assignment.round_no}차 · {assignment.status}</span><small>{formatDate(assignment.due_at)}</small></div>) : <p className="muted-text">아직 배정되지 않았습니다.</p>}</section></aside>
+      <aside className="detail-aside">
+        <section><div className="assignment-heading"><h3>심사위원 배정</h3><strong>{currentRoundAssignments.length} / 3명</strong></div>
+          {!assignmentAllowed ? <div className="notice-box">먼저 논문·저자 정보의 <b>형식검토 시작</b> 버튼을 눌러 주세요.</div>
+            : !currentAnonymousFile ? <div className="notice-box"><b>{targetRound}차 익명화 원고를 먼저 등록해 주세요.</b><br />익명 원고가 준비되어야 심사위원을 배정할 수 있습니다.</div>
+              : currentRoundAssignments.length >= 3 ? <div className="notice-box">현재 심사차수에 심사위원 3명이 모두 배정되었습니다.</div>
+                : reviewers.length === 0 ? <div className="notice-box">추가로 배정할 수 있는 활성 심사위원이 없습니다.</div>
+                  : <form className="stack-form compact-form" onSubmit={assign}><p className="assignment-guide">심사위원을 1명씩 배정할 수 있습니다. 잘못 배정한 경우 아래 배정현황에서 취소한 뒤 교체할 수 있습니다.</p><label>심사위원<select name="reviewer" required defaultValue=""><option value="" disabled>심사위원 선택</option>{reviewers.map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name} · {reviewer.affiliation ?? "소속 미입력"}</option>)}</select></label><label>심사기한<input name="dueAt" type="date" required min={dateInputAfter(1)} defaultValue={dateInputAfter(14)} /></label><button className="secondary-button" disabled={busy}>{busy ? "배정 중…" : "심사위원 1명 배정"}</button></form>}
+        </section>
+        <section><h3>배정현황</h3>{manuscriptAssignments.length ? manuscriptAssignments.map((assignment) => <div className={`assignment-row assignment-row-${assignment.status.toLowerCase()}`} key={assignment.id}><b>{profiles.find((person) => person.id === assignment.reviewer_id)?.full_name ?? "심사위원"}</b><span>{assignment.round_no}차 · {assignmentStatusLabel(assignment.status)}</span><small>기한 {formatDate(assignment.due_at)}</small>{assignment.cancellation_reason && <small>취소사유: {assignment.cancellation_reason}</small>}{["INVITED", "ACCEPTED"].includes(assignment.status) && <button className="assignment-cancel-button" type="button" disabled={busy} onClick={() => void cancelAssignment(assignment)}>배정 취소·교체</button>}</div>) : <p className="muted-text">아직 배정되지 않았습니다.</p>}</section>
+      </aside>
     </div>
   </section></div>;
 }

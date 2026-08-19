@@ -9,7 +9,7 @@ const corsHeaders = {
 const allowedKinds = {
   ORIGINAL: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: false },
   ANONYMIZED: { bucket: "manuscripts", maxBytes: 52_428_800, anonymized: true },
-  REVISION: { bucket: "revisions", maxBytes: 52_428_800, anonymized: true },
+  REVISION: { bucket: "revisions", maxBytes: 52_428_800, anonymized: false },
   FINAL: { bucket: "final-files", maxBytes: 52_428_800, anonymized: false },
   REVIEW_ATTACHMENT: { bucket: "review-files", maxBytes: 20_971_520, anonymized: false },
   PUBLISHED: { bucket: "published", maxBytes: 52_428_800, anonymized: false },
@@ -89,18 +89,19 @@ Deno.serve(async (request) => {
 
     const { data: manuscript } = await service
       .from("manuscripts")
-      .select("id,created_by,status")
+      .select("id,created_by,status,round_no")
       .eq("id", manuscriptId)
       .maybeSingle();
     if (!manuscript) return json({ error: "Manuscript not found" }, 404);
 
     let authorized = false;
     if (roles.has("ADMIN") || roles.has("EDITOR")) {
-      authorized = fileKind !== "PUBLISHED" || roles.has("ADMIN");
+      authorized = (fileKind !== "PUBLISHED" || roles.has("ADMIN"))
+        && (fileKind !== "ANONYMIZED" || versionNo === Math.max(manuscript.round_no, 1));
     }
     if (!authorized && roles.has("AUTHOR") && manuscript.created_by === userId) {
       authorized =
-        (["ORIGINAL", "ANONYMIZED"].includes(fileKind) && manuscript.status === "DRAFT") ||
+        (fileKind === "ORIGINAL" && manuscript.status === "DRAFT") ||
         (fileKind === "REVISION" && manuscript.status === "REVISION_REQUESTED") ||
         (fileKind === "FINAL" && ["ACCEPTED", "ACCEPT_WITH_REVISIONS"].includes(manuscript.status));
     }
@@ -137,6 +138,8 @@ Deno.serve(async (request) => {
         size_bytes: file.size,
         is_anonymized: rule.anonymized,
         uploaded_by: userId,
+        editor_verified_at: fileKind === "ANONYMIZED" ? new Date().toISOString() : null,
+        editor_verified_by: fileKind === "ANONYMIZED" ? userId : null,
       })
       .select("id,bucket_id,storage_path,file_kind,version_no,mime_type,size_bytes,created_at")
       .single();
@@ -153,7 +156,7 @@ Deno.serve(async (request) => {
 
   const { data: fileRecord } = await service
     .from("manuscript_files")
-    .select("id,manuscript_id,bucket_id,storage_path,file_kind,is_anonymized,uploaded_by,manuscripts!inner(created_by)")
+    .select("id,manuscript_id,bucket_id,storage_path,file_kind,version_no,is_anonymized,uploaded_by,editor_verified_at,editor_verified_by,manuscripts!inner(created_by)")
     .eq("id", body.file_id)
     .maybeSingle();
   if (!fileRecord) return json({ error: "File not found" }, 404);
@@ -168,13 +171,19 @@ Deno.serve(async (request) => {
   if (!authorized && roles.has("REVIEWER")) {
     if (fileRecord.file_kind === "REVIEW_ATTACHMENT") {
       authorized = fileRecord.uploaded_by === userId;
-    } else if (fileRecord.is_anonymized && ["ANONYMIZED", "REVISION"].includes(fileRecord.file_kind)) {
+    } else if (
+      fileRecord.is_anonymized
+      && fileRecord.file_kind === "ANONYMIZED"
+      && fileRecord.editor_verified_at
+      && fileRecord.editor_verified_by
+    ) {
       const { data: assignment } = await service
         .from("reviewer_assignments")
         .select("id")
         .eq("manuscript_id", fileRecord.manuscript_id)
         .eq("reviewer_id", userId)
-        .in("status", ["INVITED", "ACCEPTED", "COMPLETED"])
+        .eq("round_no", fileRecord.version_no)
+        .in("status", ["ACCEPTED", "COMPLETED"])
         .limit(1)
         .maybeSingle();
       authorized = Boolean(assignment);
