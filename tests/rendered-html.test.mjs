@@ -149,7 +149,12 @@ test("new submissions use a full-page ethics-first authoring wizard", async () =
   assert.match(submission, /임시저장한 내용을 불러왔습니다/);
   assert.match(submission, /isKoreanText/);
   assert.match(submission, /isEnglishText/);
-  assert.match(submission, /validatePaperLanguage\(\)/);
+  assert.match(submission, /validatePaperFields\(\)/);
+  assert.match(submission, /한글·영문·숫자·문장부호를 함께 사용할 수 있습니다/);
+  assert.doesNotMatch(submission, /논문제목\(국문\)은 한글로 작성해 주세요/);
+  assert.doesNotMatch(submission, /논문제목\(영문\)은 영어로 작성해 주세요/);
+  assert.doesNotMatch(submission, /국문초록은 한글로 작성해 주세요/);
+  assert.doesNotMatch(submission, /영문초록은 영어로 작성해 주세요/);
   assert.match(submission, /validateAuthorLanguage\(\)/);
   assert.doesNotMatch(submission, /\bSubmissionModal\b/);
   assert.match(author, /openNewSubmissionPage/);
@@ -433,7 +438,7 @@ test("administrators can inspect every workspace and bypass only wizard navigati
   assert.match(app, /isAdministrator\s*\?\s*ROLE_ORDER/);
   assert.match(app, /adminTestMode=\{roles\.includes\("ADMIN"\)\}/);
   assert.match(submission, /관리자 운영 테스트 모드/);
-  assert.match(submission, /if \(!adminTestMode\) \{[\s\S]*?validatePaperLanguage/);
+  assert.match(submission, /if \(!adminTestMode\) \{[\s\S]*?validatePaperFields/);
   assert.match(submission, /if \(!adminTestMode\) \{[\s\S]*?validateAuthorLanguage/);
   assert.match(submission, /required=\{!adminTestMode\}/);
   assert.match(submission, /disabled=\{busy \|\| \(!adminTestMode && !ethicsComplete\)\}/);

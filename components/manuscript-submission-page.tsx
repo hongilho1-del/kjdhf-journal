@@ -221,13 +221,14 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
     setEthicsAgreedAt(checked ? new Date().toISOString() : null);
   }
 
-  function validatePaperLanguage() {
-    if (!isKoreanText(paper.titleKo)) return "논문제목(국문)은 한글로 작성해 주세요.";
-    if (!isEnglishText(paper.titleEn)) return "논문제목(영문)은 영어로 작성해 주세요.";
-    if (!isKoreanText(paper.abstractKo)) return "국문초록은 한글로 작성해 주세요.";
-    if (!isEnglishText(paper.abstractEn)) return "영문초록은 영어로 작성해 주세요.";
-    if (!isKoreanText(paper.keywordsKo)) return "국문 핵심어는 한글로 작성해 주세요.";
-    if (!isEnglishText(paper.keywordsEn)) return "영문 Keywords는 영어로 작성해 주세요.";
+  function validatePaperFields() {
+    if (!paper.titleKo.trim()) return "논문제목(국문)을 입력해 주세요.";
+    if (!paper.titleEn.trim()) return "논문제목(영문)을 입력해 주세요.";
+    if (!paper.abstractKo.trim()) return "국문초록을 입력해 주세요.";
+    if (!paper.abstractEn.trim()) return "영문초록을 입력해 주세요.";
+    if (!paper.keywordsKo.trim()) return "국문 핵심어를 입력해 주세요.";
+    if (!paper.keywordsEn.trim()) return "영문 Keywords를 입력해 주세요.";
+    if (!paper.researchField) return "연구분야를 선택해 주세요.";
     return "";
   }
 
@@ -316,7 +317,7 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
   function continueFromPaper(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!adminTestMode) {
-      const error = validatePaperLanguage();
+      const error = validatePaperFields();
       if (error) return showValidationError(error);
     }
     goToStep(4);
@@ -334,8 +335,8 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
   async function handleFinalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!ethicsComplete) return showValidationError("연구·출판윤리규정에 동의한 뒤 제출해 주세요.");
-    const languageError = validatePaperLanguage() || validateAuthorLanguage();
-    if (languageError) return showValidationError(languageError);
+    const validationError = validatePaperFields() || validateAuthorLanguage();
+    if (validationError) return showValidationError(validationError);
     const values = new FormData(event.currentTarget);
     const original = values.get("originalFile");
     const anonymized = values.get("anonymizedFile");
@@ -438,7 +439,7 @@ function NewSubmissionWizard({ profile, adminTestMode, initialDraftId, onCancel,
     </section>}
 
     {step === 3 && <section className="wizard-panel">
-      <div className="wizard-heading"><small>STEP 03</small><h2>논문 및 초록 입력</h2><p>심사와 색인에 사용될 국·영문 정보를 정확하게 입력해 주세요.</p></div>
+      <div className="wizard-heading"><small>STEP 03</small><h2>논문 및 초록 입력</h2><p>심사와 색인에 사용될 정보를 입력해 주세요. 각 항목에는 한글·영문·숫자·문장부호를 함께 사용할 수 있습니다.</p></div>
       <form className="wizard-form" onSubmit={continueFromPaper}>
         <label className="wide">논문제목(국문)<input value={paper.titleKo} onChange={(event) => updatePaper("titleKo", event.target.value)} required={!adminTestMode} /></label>
         <label className="wide">논문제목(영문)<input value={paper.titleEn} onChange={(event) => updatePaper("titleEn", event.target.value)} required={!adminTestMode} /></label>
