@@ -95,6 +95,9 @@ test("signup follows four JAMS-style steps and keeps new members pending approva
   for (const consent of ["서비스 이용약관", "개인정보 수집 및 이용", "개인정보 국외이전", "학술정보 이메일 수신"]) assert.match(panel, new RegExp(consent));
   assert.match(panel, /requiredAgreementsComplete/);
   assert.match(panel, /consent_academic_email/);
+  assert.match(panel, /over_email_send_rate_limit/);
+  assert.match(panel, /현재 인증 메일 발송 한도를 초과했습니다/);
+  assert.match(panel, /submitLock\.current/);
   assert.match(consentMigration, /create table public\.user_consents/);
   assert.match(consentMigration, /policy_version/);
   assert.doesNotMatch(panel, /service[_-]?role/i);

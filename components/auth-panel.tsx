@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { getErrorMessage } from "@/lib/journal";
 import { ACADEMIC_EMAIL_TERMS, OVERSEAS_TRANSFER_TERMS, PRIVACY_COLLECTION_TERMS, SERVICE_TERMS, SIGNUP_POLICY_VERSION } from "@/lib/policies";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }: { onClose: () => void; adminLogin?: boolean; initialMode?: "login" | "signup" }) {
+  const submitLock = useRef(false);
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [signupStep, setSignupStep] = useState<1 | 2 | 3 | 4>(1);
   const [memberType, setMemberType] = useState<"individual" | null>(null);
@@ -18,7 +19,8 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || submitLock.current) return;
+    submitLock.current = true;
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const username = String(form.get("username") ?? "").trim().toLowerCase();
@@ -77,9 +79,10 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
         onClose();
       }
     } catch (error) {
-      setMessage(getErrorMessage(error));
+      setMessage(getAuthErrorMessage(error));
     } finally {
       setBusy(false);
+      submitLock.current = false;
     }
   }
 
@@ -155,6 +158,17 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
       </section>
     </div>
   );
+}
+
+function getAuthErrorMessage(error: unknown) {
+  const message = getErrorMessage(error);
+  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+
+  if (code === "over_email_send_rate_limit" || /email rate limit exceeded/i.test(message)) {
+    return "현재 인증 메일 발송 한도를 초과했습니다. 이미 가입 완료 안내를 보았다면 받은편지함과 스팸함을 확인해 주세요. 아직 가입되지 않았다면 마지막 발송 후 약 1시간 뒤 다시 신청해 주세요. 가입 신청 버튼을 반복해서 누르지 않아도 됩니다.";
+  }
+
+  return message;
 }
 
 function SignupProgress({ step }: { step: 1 | 2 | 3 | 4 }) {
