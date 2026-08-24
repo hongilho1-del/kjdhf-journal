@@ -13,6 +13,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
   const [agreements, setAgreements] = useState({ service: false, privacy: false, overseas: false, academicEmail: false });
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [emailRateLimited, setEmailRateLimited] = useState(false);
   const [message, setMessage] = useState("");
   const requiredAgreementsComplete = agreements.service && agreements.privacy && agreements.overseas;
   const allAgreementsChecked = Object.values(agreements).every(Boolean);
@@ -79,6 +80,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
         onClose();
       }
     } catch (error) {
+      if (isEmailRateLimitError(error)) setEmailRateLimited(true);
       setMessage(getAuthErrorMessage(error));
     } finally {
       setBusy(false);
@@ -136,7 +138,7 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
               <label><span>연구분야</span><input name="researchFields" placeholder="건강체력, 디지털헬스" /><small>여러 분야는 쉼표로 구분하세요.</small></label>
             </div>
             {message && <p className="form-message" role="alert">{message}</p>}
-            <div className="signup-navigation"><button type="button" onClick={() => { setSignupStep(2); setMessage(""); }}>이전단계</button><button className="button button-primary" disabled={busy || !isSupabaseConfigured}>{busy ? "가입 신청 중…" : "가입 신청"}</button></div>
+            <div className="signup-navigation"><button type="button" onClick={() => { setSignupStep(2); setMessage(""); }}>이전단계</button><button className="button button-primary" disabled={busy || emailRateLimited || !isSupabaseConfigured}>{busy ? "가입 신청 중…" : emailRateLimited ? "메일 발송 한도 초과" : "가입 신청"}</button></div>
           </form>}
           {signupStep === 4 && <section className="signup-complete">
             <span>✓</span><small>STEP 04</small><h3>가입 신청이 완료되었습니다.</h3><p><strong>{registeredEmail}</strong>로 발송된 인증 메일을 확인해 주세요.<br />이메일 인증과 편집관리자의 승인이 완료되면 로그인할 수 있습니다.</p>
@@ -162,13 +164,18 @@ export function AuthPanel({ onClose, adminLogin = false, initialMode = "login" }
 
 function getAuthErrorMessage(error: unknown) {
   const message = getErrorMessage(error);
-  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
 
-  if (code === "over_email_send_rate_limit" || /email rate limit exceeded/i.test(message)) {
+  if (isEmailRateLimitError(error)) {
     return "현재 인증 메일 발송 한도를 초과했습니다. 이미 가입 완료 안내를 보았다면 받은편지함과 스팸함을 확인해 주세요. 아직 가입되지 않았다면 마지막 발송 후 약 1시간 뒤 다시 신청해 주세요. 가입 신청 버튼을 반복해서 누르지 않아도 됩니다.";
   }
 
   return message;
+}
+
+function isEmailRateLimitError(error: unknown) {
+  const message = getErrorMessage(error);
+  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+  return code === "over_email_send_rate_limit" || /email rate limit exceeded/i.test(message);
 }
 
 function SignupProgress({ step }: { step: 1 | 2 | 3 | 4 }) {

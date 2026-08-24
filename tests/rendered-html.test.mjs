@@ -98,6 +98,8 @@ test("signup follows four JAMS-style steps and keeps new members pending approva
   assert.match(panel, /over_email_send_rate_limit/);
   assert.match(panel, /현재 인증 메일 발송 한도를 초과했습니다/);
   assert.match(panel, /submitLock\.current/);
+  assert.match(panel, /emailRateLimited \|\| !isSupabaseConfigured/);
+  assert.match(panel, /메일 발송 한도 초과/);
   assert.match(consentMigration, /create table public\.user_consents/);
   assert.match(consentMigration, /policy_version/);
   assert.doesNotMatch(panel, /service[_-]?role/i);
